@@ -3,6 +3,29 @@ import { TenantRequest } from '../middleware/tenantContext.js';
 import { ShopifyService } from '../services/shopifyService.js';
 import prisma from '../config/database.js';
 
+// Helper function to serialize BigInt
+const serializeBigInt = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
+
+    if (typeof obj === 'bigint') {
+        return obj.toString();
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.map(serializeBigInt);
+    }
+
+    if (typeof obj === 'object') {
+        const serialized: any = {};
+        for (const key in obj) {
+            serialized[key] = serializeBigInt(obj[key]);
+        }
+        return serialized;
+    }
+
+    return obj;
+};
+
 export const syncData = async (req: TenantRequest, res: Response) => {
     try {
         const tenant = req.tenant;
@@ -34,12 +57,16 @@ export const syncData = async (req: TenantRequest, res: Response) => {
 
 export const getCustomers = async (req: TenantRequest, res: Response) => {
     try {
+        console.log('📥 Fetching customers for tenant:', req.tenant?.id);
+
         const { page = 1, limit = 20, search = '' } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
-        const where: any = { tenantId: req.tenant.id };
+        const where: any = {
+            tenantId: req.tenant?.id || 0
+        };
 
-        if (search) {
+        if (search && String(search).trim() !== '') {
             where.OR = [
                 { email: { contains: String(search), mode: 'insensitive' } },
                 { firstName: { contains: String(search), mode: 'insensitive' } },
@@ -57,18 +84,29 @@ export const getCustomers = async (req: TenantRequest, res: Response) => {
             prisma.customer.count({ where }),
         ]);
 
+        console.log(`✅ Found ${customers.length} customers`);
+
+        // Serialize BigInt values
+        const serializedCustomers = serializeBigInt(customers);
+
         res.json({
             success: true,
-            customers,
+            customers: serializedCustomers,
             pagination: {
                 page: Number(page),
                 limit: Number(limit),
                 total,
-                totalPages: Math.ceil(total / Number(limit)),
+                totalPages: Math.ceil(total / Number(limit)) || 1,
             },
         });
     } catch (error: any) {
-        res.status(500).json({ success: false, message: 'Error fetching customers', error: error.message });
+        console.error('❌ Error fetching customers:', error);
+
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching customers',
+            error: error.message,
+        });
     }
 };
 
@@ -103,9 +141,12 @@ export const getOrders = async (req: TenantRequest, res: Response) => {
             prisma.order.count({ where: { tenantId: req.tenant.id } }),
         ]);
 
+        // Serialize BigInt values
+        const serializedOrders = serializeBigInt(orders);
+
         res.json({
             success: true,
-            orders,
+            orders: serializedOrders,
             pagination: {
                 page: Number(page),
                 limit: Number(limit),
@@ -114,6 +155,7 @@ export const getOrders = async (req: TenantRequest, res: Response) => {
             },
         });
     } catch (error: any) {
+        console.error('Error fetching orders:', error);
         res.status(500).json({ success: false, message: 'Error fetching orders', error: error.message });
     }
 };
@@ -133,9 +175,12 @@ export const getProducts = async (req: TenantRequest, res: Response) => {
             prisma.product.count({ where: { tenantId: req.tenant.id } }),
         ]);
 
+        // Serialize BigInt values
+        const serializedProducts = serializeBigInt(products);
+
         res.json({
             success: true,
-            products,
+            products: serializedProducts,
             pagination: {
                 page: Number(page),
                 limit: Number(limit),
@@ -144,6 +189,7 @@ export const getProducts = async (req: TenantRequest, res: Response) => {
             },
         });
     } catch (error: any) {
+        console.error('Error fetching products:', error);
         res.status(500).json({ success: false, message: 'Error fetching products', error: error.message });
     }
 };
