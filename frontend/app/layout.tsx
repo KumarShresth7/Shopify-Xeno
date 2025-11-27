@@ -1,24 +1,20 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { AuthProvider } from '@/contexts/AuthContext';
-
-const inter = Inter({ subsets: ['latin'] });
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Xeno Insights - Shopify Analytics',
-  description: 'Multi-tenant Shopify data ingestion and insights service',
+  title: "Xeno Analytics - Shopify Insights",
+  description: "Multi-tenant Shopify data ingestion and insights platform",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <AuthProvider>{children}</AuthProvider>
+      <body className="antialiased">
+        {children}
       </body>
     </html>
   );

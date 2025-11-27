@@ -1,20 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Store } from 'lucide-react';
+import apiClient from '@/lib/api';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [shopDomain, setShopDomain] = useState('');
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    shopDomain: '',
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,12 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(email, password, shopDomain);
+      const response = await apiClient.post('/auth/register', formData);
+      
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.token);
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -31,62 +37,57 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <Store className="h-12 w-12 text-primary-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Xeno Insights</h1>
-          <p className="text-gray-600 mt-2">Create your account</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 className="text-3xl font-bold text-center mb-2">Xeno Analytics</h1>
+        <p className="text-gray-600 text-center mb-8">Create your account</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             type="email"
             label="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com"
+            placeholder="you@example.com"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
           />
+
           <Input
             type="password"
             label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
           />
+
           <Input
             type="text"
-            label="Shopify Store Domain"
-            value={shopDomain}
-            onChange={(e) => setShopDomain(e.target.value)}
+            label="Shop Domain"
             placeholder="your-store.myshopify.com"
+            value={formData.shopDomain}
+            onChange={(e) => setFormData({ ...formData, shopDomain: e.target.value })}
             required
           />
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating account...' : 'Create Account'}
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link href="/login" className="text-primary-600 hover:text-primary-700 font-medium">
-              Sign in
-            </Link>
-          </p>
-        </div>
-      </Card>
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Already have an account?{' '}
+          <Link href="/login" className="text-blue-600 hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
