@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import apiClient from '@/lib/api';
+import { ChevronLeft, ChevronRight, Package, Truck, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -16,121 +17,130 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get(`/shopify/orders?page=${currentPage}&limit=20`);
+      const response = await apiClient.get(`/shopify/orders?page=${currentPage}&limit=15`);
       setOrders(response.data.orders);
       setPagination(response.data.pagination);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: any = {
-      paid: 'bg-green-100 text-green-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      refunded: 'bg-red-100 text-red-800',
-      fulfilled: 'bg-blue-100 text-blue-800',
-      unfulfilled: 'bg-gray-100 text-gray-800',
-      partial: 'bg-orange-100 text-orange-800',
+  const getStatusBadge = (status: string) => {
+    const styles: any = {
+      paid: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      pending: 'bg-amber-50 text-amber-700 border-amber-200',
+      refunded: 'bg-red-50 text-red-700 border-red-200',
+      fulfilled: 'bg-blue-50 text-blue-700 border-blue-200',
+      unfulfilled: 'bg-slate-100 text-slate-700 border-slate-200',
     };
-    return colors[status.toLowerCase()] || 'bg-gray-100 text-gray-800';
+    const style = styles[status?.toLowerCase()] || styles.unfulfilled;
+    
+    return (
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${style} inline-flex items-center gap-1.5 capitalize`}>
+        <span className={`w-1.5 h-1.5 rounded-full bg-current opacity-60`} />
+        {status || 'Unknown'}
+      </span>
+    );
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-        <p className="text-gray-600 mt-2">View and manage all orders</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
+          <p className="text-slate-500 mt-1 text-sm">Track and manage customer orders.</p>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Order #</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Customer</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Total</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Financial Status</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Fulfillment</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Date</th>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-100">
+            <thead className="bg-slate-50/50">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Order</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Fulfillment</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-100">
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i}>
+                    {[...Array(6)].map((_, j) => (
+                      <td key={j} className="px-6 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-full"></div></td>
+                    ))}
                   </tr>
-                </thead>
-                <tbody>
-                  {orders.length > 0 ? (
-                    orders.map((order) => (
-                      <tr key={order.id.toString()} className="border-b hover:bg-gray-50">
-                        <td className="py-4 px-6 font-medium">#{order.orderNumber}</td>
-                        <td className="py-4 px-6">
-                          {order.customer 
-                            ? `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim()
-                            : 'Guest'}
-                        </td>
-                        <td className="py-4 px-6 font-semibold text-green-600">
-                          ${Number(order.totalPrice).toFixed(2)}
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.financialStatus)}`}>
-                            {order.financialStatus}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.fulfillmentStatus || 'unfulfilled')}`}>
-                            {order.fulfillmentStatus || 'unfulfilled'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-gray-600">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-gray-500">
-                        No orders found. Sync your Shopify data to see orders.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                ))
+              ) : orders.length > 0 ? (
+                orders.map((order) => (
+                  <tr key={order.id.toString()} className="hover:bg-slate-50/80 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-blue-600">
+                      #{order.orderNumber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-600 font-bold">
+                          {(order.customer?.firstName || 'G')[0]}
+                        </div>
+                        <span className="text-sm text-slate-700">
+                          {order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : 'Guest'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(order.financialStatus)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(order.fulfillmentStatus || 'unfulfilled')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
+                      ${Number(order.totalPrice).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-16 text-center text-slate-500">
+                    <Package size={32} className="mx-auto text-slate-300 mb-2" />
+                    <p>No orders found to display.</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 bg-gray-50">
-                <div className="text-sm text-gray-600">
-                  Showing {orders.length} of {pagination.total} orders
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                  >
-                    Previous
-                  </button>
-                  <span className="px-4 py-2 text-gray-700">
-                    Page {currentPage} of {pagination.totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={currentPage === pagination.totalPages}
-                    className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-sm text-slate-500">
+              Page <span className="font-medium">{currentPage}</span> of {pagination.totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                disabled={currentPage === pagination.totalPages}
+                className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

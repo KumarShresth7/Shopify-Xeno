@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import apiClient from '@/lib/api';
-import { Package } from 'lucide-react';
+import { Package, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -17,11 +17,11 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get(`/shopify/products?page=${currentPage}&limit=20`);
+      const response = await apiClient.get(`/shopify/products?page=${currentPage}&limit=15`);
       setProducts(response.data.products);
       setPagination(response.data.pagination);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -31,98 +31,93 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Products</h1>
-          <p className="text-gray-600 mt-2">View your product catalog</p>
+          <h1 className="text-2xl font-bold text-slate-900">Products</h1>
+          <p className="text-slate-500 mt-1 text-sm">Manage your product catalog.</p>
         </div>
-        <div className="bg-blue-100 p-4 rounded-lg">
-          <div className="flex items-center gap-2">
-            <Package className="text-blue-600" size={24} />
-            <div>
-              <p className="text-sm text-gray-600">Total Products</p>
-              <p className="text-2xl font-bold text-gray-900">{pagination.total || 0}</p>
-            </div>
-          </div>
+        <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm flex items-center gap-2">
+          <Package size={16} className="text-blue-600" />
+          <span className="text-sm font-medium text-slate-700">Total: {pagination.total || 0}</span>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Title</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Type</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Vendor</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Price</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-700">Created</th>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-100">
+            <thead className="bg-slate-50/50">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Product Name</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Vendor</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Price</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Added</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-100">
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i}>
+                    {[...Array(5)].map((_, j) => (
+                      <td key={j} className="px-6 py-4"><div className="h-4 bg-slate-100 rounded animate-pulse w-full"></div></td>
+                    ))}
                   </tr>
-                </thead>
-                <tbody>
-                  {products.length > 0 ? (
-                    products.map((product) => (
-                      <tr key={product.id.toString()} className="border-b hover:bg-gray-50">
-                        <td className="py-4 px-6">
-                          <div className="font-medium text-gray-900">{product.title}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                            {product.productType || 'N/A'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-gray-600">{product.vendor || 'N/A'}</td>
-                        <td className="py-4 px-6 font-semibold text-green-600">
-                          ${Number(product.price).toFixed(2)}
-                        </td>
-                        <td className="py-4 px-6 text-gray-600">
-                          {new Date(product.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center text-gray-500">
-                        No products found. Sync your Shopify data to see products.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                ))
+              ) : products.length > 0 ? (
+                products.map((product) => (
+                  <tr key={product.id.toString()} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-900">{product.title}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                        <Tag size={12} />
+                        {product.productType || 'Uncategorized'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500">
+                      {product.vendor}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-emerald-600">
+                      ${Number(product.price).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      {new Date(product.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-16 text-center text-slate-500">
+                    <p>No products found in the catalog.</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 bg-gray-50">
-                <div className="text-sm text-gray-600">
-                  Showing {products.length} of {pagination.total} products
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                  >
-                    Previous
-                  </button>
-                  <span className="px-4 py-2 text-gray-700">
-                    Page {currentPage} of {pagination.totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={currentPage === pagination.totalPages}
-                    className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
+        {/* Pagination Footer */}
+        {pagination.totalPages > 1 && (
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-sm text-slate-500">
+              Page <span className="font-medium">{currentPage}</span> of {pagination.totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                disabled={currentPage === pagination.totalPages}
+                className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

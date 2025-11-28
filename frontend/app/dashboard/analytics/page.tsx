@@ -3,25 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '@/lib/api';
 import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
-import { TrendingUp, TrendingDown, ShoppingCart, AlertCircle } from 'lucide-react';
+import { TrendingUp, ShoppingCart, AlertCircle, RefreshCw } from 'lucide-react';
+
+const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function AnalyticsPage() {
-  const [abandonedCarts, setAbandonedCarts] = useState<any>(null);
-  const [conversion, setConversion] = useState<any>(null);
-  const [productPerf, setProductPerf] = useState<any[]>([]);
-  const [segments, setSegments] = useState<any[]>([]);
+  const [data, setData] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,219 +19,111 @@ export default function AnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
-      const [cartsRes, convRes, prodRes, segRes] = await Promise.all([
+      const [carts, conv, prod, seg] = await Promise.all([
         apiClient.get('/insights/abandoned-carts'),
         apiClient.get('/insights/conversion-metrics'),
-        apiClient.get('/insights/product-performance?limit=10'),
+        apiClient.get('/insights/product-performance?limit=8'),
         apiClient.get('/insights/customer-segments'),
       ]);
-
-      setAbandonedCarts(cartsRes.data.data);
-      setConversion(convRes.data.data);
-      setProductPerf(prodRes.data.data);
-      setSegments(segRes.data.data);
+      setData({
+        carts: carts.data.data,
+        conv: conv.data.data,
+        prod: prod.data.data,
+        seg: seg.data.data,
+      });
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex h-[80vh] items-center justify-center">
+      <div className="w-12 h-12 rounded-full border-4 border-slate-100 border-t-blue-600 animate-spin"></div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Advanced Analytics</h1>
-        <p className="text-gray-600 mt-2">Deep insights into your store performance</p>
+        <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
+        <p className="text-slate-500 mt-1 text-sm">Deep dive into your store performance metrics.</p>
       </div>
 
-      {/* Conversion Metrics */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="text-green-600" size={20} />
-            <h3 className="text-sm text-gray-600">Conversion Rate</h3>
-          </div>
-          <p className="text-3xl font-bold text-green-600">{conversion?.conversionRate || 0}%</p>
-          <p className="text-xs text-gray-500 mt-1">Checkout to order conversion</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <ShoppingCart className="text-blue-600" size={20} />
-            <h3 className="text-sm text-gray-600">Total Checkouts</h3>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{conversion?.totalCheckouts || 0}</p>
-          <p className="text-xs text-gray-500 mt-1">Initiated checkouts</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="text-red-600" size={20} />
-            <h3 className="text-sm text-gray-600">Abandoned Carts</h3>
-          </div>
-          <p className="text-3xl font-bold text-red-600">{abandonedCarts?.totalAbandoned || 0}</p>
-          <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingDown className="text-orange-600" size={20} />
-            <h3 className="text-sm text-gray-600">Potential Revenue</h3>
-          </div>
-          <p className="text-3xl font-bold text-orange-600">
-            ${abandonedCarts?.potentialRevenue?.toFixed(2) || 0}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">From abandoned carts</p>
-        </div>
+        <KPICard title="Conversion Rate" value={`${data.conv?.conversionRate}%`} sub="Checkout to Order" icon={TrendingUp} color="emerald" />
+        <KPICard title="Total Checkouts" value={data.conv?.totalCheckouts} sub="Initiated sessions" icon={ShoppingCart} color="blue" />
+        <KPICard title="Abandoned Carts" value={data.carts?.totalAbandoned} sub="Last 30 days" icon={AlertCircle} color="red" />
+        <KPICard title="Lost Revenue" value={`$${data.carts?.potentialRevenue?.toFixed(2)}`} sub="From abandoned carts" icon={RefreshCw} color="amber" />
       </div>
 
-      {/* Product Performance */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Top Products by Revenue</h2>
-        {productPerf.length > 0 ? (
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={productPerf}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="title" 
-                angle={-45} 
-                textAnchor="end" 
-                height={120}
-                interval={0}
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="totalRevenue" fill="#8884d8" name="Revenue ($)" />
-              <Bar dataKey="totalQuantitySold" fill="#82ca9d" name="Units Sold" />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="text-center py-12">
-            <Package className="mx-auto text-gray-400 mb-2" size={48} />
-            <p className="text-gray-500">No product performance data available</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Product Performance Chart */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">Top Products by Revenue</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.prod} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                <XAxis type="number" hide />
+                <YAxis dataKey="title" type="category" width={100} tick={{ fontSize: 11 }} />
+                <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="totalRevenue" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Customer Segments */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Customer Segments</h2>
-        {segments.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ResponsiveContainer width="100%" height={300}>
+        {/* Customer Segments Pie */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">Customer Segments</h3>
+          <div className="h-80 flex flex-col items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={segments}
+                  data={data.seg}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={(entry) => `${entry.segment}: ${entry.customerCount}`}
+                  innerRadius={60}
                   outerRadius={100}
-                  fill="#8884d8"
+                  paddingAngle={5}
                   dataKey="customerCount"
                 >
-                  {segments.map((entry, index) => (
+                  {data.seg.map((_: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend verticalAlign="bottom" height={36} />
               </PieChart>
             </ResponsiveContainer>
-
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-700 mb-3">Segment Breakdown</h3>
-              {segments.map((segment, index) => (
-                <div
-                  key={index}
-                  className="border-l-4 pl-4 py-2"
-                  style={{ borderColor: COLORS[index % COLORS.length] }}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{segment.segment}</h4>
-                      <p className="text-sm text-gray-600">
-                        {segment.customerCount} customers
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-green-600">
-                        ${segment.segmentRevenue.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Avg: ${segment.avgCustomerValue.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No customer segment data available</p>
-          </div>
-        )}
-      </div>
-
-      {/* Recent Abandoned Carts */}
-      {abandonedCarts?.recentCarts && abandonedCarts.recentCarts.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Recent Abandoned Carts</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Customer Email</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Cart Value</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Abandoned Date</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Days Ago</th>
-                </tr>
-              </thead>
-              <tbody>
-                {abandonedCarts.recentCarts.map((cart: any, index: number) => {
-                  const daysAgo = Math.floor(
-                    (Date.now() - new Date(cart.abandonedAt).getTime()) / (1000 * 60 * 60 * 24)
-                  );
-                  return (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        {cart.customerEmail || <span className="text-gray-400 italic">Guest</span>}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-green-600">
-                        ${Number(cart.totalPrice).toFixed(2)}
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">
-                        {new Date(cart.abandonedAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          daysAgo <= 1 ? 'bg-red-100 text-red-800' : 
-                          daysAgo <= 7 ? 'bg-yellow-100 text-yellow-800' : 
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {daysAgo === 0 ? 'Today' : `${daysAgo}d ago`}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
+
+const KPICard = ({ title, value, sub, icon: Icon, color }: any) => {
+  const colors: any = {
+    emerald: 'bg-emerald-50 text-emerald-600',
+    blue: 'bg-blue-50 text-blue-600',
+    red: 'bg-red-50 text-red-600',
+    amber: 'bg-amber-50 text-amber-600',
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start mb-4">
+        <div className={`p-3 rounded-lg ${colors[color]}`}>
+          <Icon size={20} />
+        </div>
+      </div>
+      <h3 className="text-slate-500 text-sm font-medium">{title}</h3>
+      <p className="text-2xl font-bold text-slate-900 mt-1">{value || 0}</p>
+      <p className="text-xs text-slate-400 mt-1">{sub}</p>
+    </div>
+  );
+};

@@ -4,14 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard,
-  Users,
-  ShoppingCart,
-  Package,
-  RefreshCw,
-  Settings,
-  BarChart3,
-  LogOut,
+  LayoutDashboard, Users, ShoppingCart, Package, RefreshCw,
+  Settings, BarChart3, LogOut, ChevronRight
 } from 'lucide-react';
 import apiClient from '@/lib/api';
 
@@ -21,7 +15,6 @@ const navItems = [
   { href: '/dashboard/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/dashboard/products', label: 'Products', icon: Package },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -39,26 +32,36 @@ export default function Sidebar() {
     try {
       const response = await apiClient.post('/shopify/sync');
       if (response.data.success) {
-        alert(`✅ Data synced successfully!\n\nCustomers: ${response.data.results.customers}\nProducts: ${response.data.results.products}\nOrders: ${response.data.results.orders}`);
+        // You might want to use a toast notification here instead of alert
+        alert('Sync Complete');
         window.location.reload();
-      } else {
-        alert('❌ ' + response.data.message);
       }
-    } catch (error: any) {
-      alert('❌ ' + (error.response?.data?.message || 'Error syncing data'));
+    } catch (error) {
+      console.error(error);
     } finally {
       setSyncing(false);
     }
   };
 
   return (
-    <div className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
-      <div className="p-6 border-b border-gray-800">
-        <h1 className="text-2xl font-bold">Xeno Analytics</h1>
-        <p className="text-sm text-gray-400 mt-1">Shopify Insights</p>
+    <aside className="w-72 bg-white border-r border-slate-200 min-h-screen flex flex-col fixed left-0 top-0 z-50">
+      <div className="p-6">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-600/20">
+            <span className="font-bold text-lg">X</span>
+          </div>
+          <div>
+            <h1 className="font-bold text-slate-900 text-lg tracking-tight">Xeno</h1>
+            <p className="text-xs text-slate-500 font-medium">Enterprise Analytics</p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 px-4 py-6">
+      <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-4">
+          Menu
+        </div>
+        
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -67,37 +70,56 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
+              className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${
                 isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  ? 'bg-blue-50 text-blue-700 font-medium'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              <Icon size={20} />
-              <span>{item.label}</span>
+              <div className="flex items-center gap-3">
+                <Icon size={20} className={isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'} />
+                <span>{item.label}</span>
+              </div>
+              {isActive && <ChevronRight size={16} className="text-blue-400" />}
             </Link>
           );
         })}
 
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors mt-4 border border-gray-700 disabled:opacity-50"
-        >
-          <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} />
-          <span>{syncing ? 'Syncing...' : 'Sync Data'}</span>
-        </button>
-      </nav>
+        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-8 mb-4 px-4">
+          System
+        </div>
 
-      <div className="p-4 border-t border-gray-800">
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-gray-800 transition-colors"
+        <Link
+          href="/dashboard/settings"
+          className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+            pathname === '/dashboard/settings' ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'
+          }`}
         >
-          <LogOut size={20} />
-          <span>Logout</span>
-        </button>
+          <Settings size={20} className="text-slate-400 group-hover:text-slate-600" />
+          <span>Settings</span>
+        </Link>
       </div>
-    </div>
+
+      <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-sm font-medium hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all disabled:opacity-70"
+          >
+            <RefreshCw size={16} className={syncing ? 'animate-spin text-blue-600' : ''} />
+            {syncing ? 'Syncing...' : 'Sync Data'}
+          </button>
+          
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 text-sm transition-colors"
+          >
+            <LogOut size={16} />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+    </aside>
   );
 }
