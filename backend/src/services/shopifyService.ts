@@ -20,6 +20,8 @@ export class ShopifyService {
                     'Content-Type': 'application/json',
                 },
             });
+            console.log('🔑 Token Scopes:', response.headers['x-shopify-access-token-scopes']);
+            console.log('Response data: ', response.data)
             return response.data;
         } catch (error: any) {
             console.error(`Shopify API Error for ${endpoint}:`, error.message);

@@ -11,6 +11,10 @@ const serializeBigInt = (obj: any): any => {
         return obj.toString();
     }
 
+    if (obj instanceof Date) {
+        return obj;
+    }
+
     if (Array.isArray(obj)) {
         return obj.map(serializeBigInt);
     }
@@ -57,8 +61,6 @@ export const syncData = async (req: TenantRequest, res: Response) => {
 
 export const getCustomers = async (req: TenantRequest, res: Response) => {
     try {
-        console.log('📥 Fetching customers for tenant:', req.tenant?.id);
-
         const { page = 1, limit = 20, search = '' } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
@@ -84,9 +86,7 @@ export const getCustomers = async (req: TenantRequest, res: Response) => {
             prisma.customer.count({ where }),
         ]);
 
-        console.log(`✅ Found ${customers.length} customers`);
-
-        // Serialize BigInt values
+        // Serialize BigInt values (and preserve Dates)
         const serializedCustomers = serializeBigInt(customers);
 
         res.json({
@@ -141,7 +141,7 @@ export const getOrders = async (req: TenantRequest, res: Response) => {
             prisma.order.count({ where: { tenantId: req.tenant.id } }),
         ]);
 
-        // Serialize BigInt values
+        // Serialize BigInt values (and preserve Dates)
         const serializedOrders = serializeBigInt(orders);
 
         res.json({
@@ -175,7 +175,7 @@ export const getProducts = async (req: TenantRequest, res: Response) => {
             prisma.product.count({ where: { tenantId: req.tenant.id } }),
         ]);
 
-        // Serialize BigInt values
+        // Serialize BigInt values (and preserve Dates)
         const serializedProducts = serializeBigInt(products);
 
         res.json({
