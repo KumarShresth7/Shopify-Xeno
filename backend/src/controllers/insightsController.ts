@@ -47,7 +47,7 @@ export const getRevenueTrend = async (req: TenantRequest, res: Response) => {
                 lte: new Date(endDate as string),
             };
         } else {
-            // Default to last 30 days
+
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             where.createdAt = {
@@ -166,7 +166,7 @@ export const getOrdersByDate = async (req: TenantRequest, res: Response) => {
     }
 };
 
-// BONUS: Abandoned Carts Analytics
+
 export const getAbandonedCarts = async (req: TenantRequest, res: Response) => {
     try {
         const tenantId = req.tenant.id;
@@ -176,7 +176,7 @@ export const getAbandonedCarts = async (req: TenantRequest, res: Response) => {
                 where: {
                     tenantId,
                     abandonedAt: {
-                        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+                        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
                     },
                 },
                 _count: true,
@@ -212,7 +212,7 @@ export const getAbandonedCarts = async (req: TenantRequest, res: Response) => {
     }
 };
 
-// BONUS: Conversion Metrics
+
 export const getConversionMetrics = async (req: TenantRequest, res: Response) => {
     try {
         const tenantId = req.tenant.id;
@@ -249,7 +249,7 @@ export const getConversionMetrics = async (req: TenantRequest, res: Response) =>
     }
 };
 
-// BONUS: Product Performance
+
 export const getProductPerformance = async (req: TenantRequest, res: Response) => {
     try {
         const tenantId = req.tenant.id;
@@ -292,7 +292,7 @@ export const getProductPerformance = async (req: TenantRequest, res: Response) =
     }
 };
 
-// BONUS: Customer Segments
+
 export const getCustomerSegments = async (req: TenantRequest, res: Response) => {
     try {
         const tenantId = req.tenant.id;

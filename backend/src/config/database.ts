@@ -14,11 +14,10 @@ if (process.env.NODE_ENV !== 'production') {
     globalForPrisma.prisma = prisma;
 }
 
-// Test connection on startup
 prisma.$connect()
-    .then(() => console.log('✅ Database connected successfully (Prisma ORM)'))
+    .then(() => console.log('Database connected successfully (Prisma ORM)'))
     .catch((error) => {
-        console.error('❌ Database connection failed:', error);
+        console.error('Database connection failed:', error);
         process.exit(1);
     });
 

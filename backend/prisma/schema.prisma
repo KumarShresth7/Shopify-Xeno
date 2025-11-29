@@ -116,7 +116,7 @@ model OrderLineItem {
   @@map("order_line_items")
 }
 
-// BONUS: Cart Abandoned Tracking
+
 model AbandonedCart {
   id            Int      @id @default(autoincrement())
   tenantId      Int      @map("tenant_id")
@@ -136,7 +136,7 @@ model AbandonedCart {
   @@map("abandoned_carts")
 }
 
-// BONUS: Checkout Started Tracking
+
 model Checkout {
   id            BigInt   @id
   tenantId      Int      @map("tenant_id")

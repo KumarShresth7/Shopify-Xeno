@@ -17,13 +17,13 @@ const router = Router();
 router.use(authenticate);
 router.use(tenantContext);
 
-// Core insights
+
 router.get('/overview', getOverview);
 router.get('/revenue-trend', getRevenueTrend);
 router.get('/top-customers', getTopCustomers);
 router.get('/orders', getOrdersByDate);
 
-// BONUS: Advanced analytics
+
 router.get('/abandoned-carts', getAbandonedCarts);
 router.get('/conversion-metrics', getConversionMetrics);
 router.get('/product-performance', getProductPerformance);

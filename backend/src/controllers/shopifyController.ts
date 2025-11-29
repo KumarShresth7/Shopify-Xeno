@@ -3,7 +3,7 @@ import { TenantRequest } from '../middleware/tenantContext.js';
 import { ShopifyService } from '../services/shopifyService.js';
 import prisma from '../config/database.js';
 
-// Helper function to serialize BigInt
+
 const serializeBigInt = (obj: any): any => {
     if (obj === null || obj === undefined) return obj;
 
@@ -86,7 +86,7 @@ export const getCustomers = async (req: TenantRequest, res: Response) => {
             prisma.customer.count({ where }),
         ]);
 
-        // Serialize BigInt values (and preserve Dates)
+
         const serializedCustomers = serializeBigInt(customers);
 
         res.json({
@@ -141,7 +141,7 @@ export const getOrders = async (req: TenantRequest, res: Response) => {
             prisma.order.count({ where: { tenantId: req.tenant.id } }),
         ]);
 
-        // Serialize BigInt values (and preserve Dates)
+
         const serializedOrders = serializeBigInt(orders);
 
         res.json({
@@ -175,7 +175,7 @@ export const getProducts = async (req: TenantRequest, res: Response) => {
             prisma.product.count({ where: { tenantId: req.tenant.id } }),
         ]);
 
-        // Serialize BigInt values (and preserve Dates)
+
         const serializedProducts = serializeBigInt(products);
 
         res.json({

@@ -4,7 +4,7 @@ import { handleCartAbandoned, handleCheckoutStarted } from '../controllers/webho
 
 const router = Router();
 
-// Shopify webhooks need raw body for verification
+
 router.use(express.json({ verify: (req: any, res, buf) => { req.rawBody = buf; } }));
 
 router.post('/cart-abandoned', handleCartAbandoned);

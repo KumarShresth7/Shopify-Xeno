@@ -17,7 +17,7 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
             const { tenantId, shopDomain, accessToken } = job.data;
             const service = new ShopifyService(shopDomain, accessToken);
             await service.syncAllData(tenantId);
-            console.log(`✅ [Worker] Sync completed for tenant ${tenantId}`);
+            console.log(`[Worker] Sync completed for tenant ${tenantId}`);
         }
 
         else if (job.name === 'process-webhook') {
@@ -45,7 +45,7 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
 
         }
     } catch (error: any) {
-        console.error(`❌ [Worker] Job ${job.id} failed:`, error.message);
+        console.error(`[Worker] Job ${job.id} failed:`, error.message);
         throw error;
     }
 }, {

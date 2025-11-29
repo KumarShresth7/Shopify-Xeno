@@ -151,7 +151,7 @@ export class ShopifyService {
                 },
             });
 
-            // Delete existing line items for this order
+
             await prisma.orderLineItem.deleteMany({
                 where: {
                     orderId: BigInt(order.id),
@@ -159,7 +159,7 @@ export class ShopifyService {
                 },
             });
 
-            // Insert line items
+
             if (order.line_items && order.line_items.length > 0) {
                 for (const item of order.line_items) {
                     await prisma.orderLineItem.create({

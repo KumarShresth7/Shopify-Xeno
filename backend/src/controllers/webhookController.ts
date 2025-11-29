@@ -72,7 +72,7 @@ export const handleCheckoutStarted = async (req: Request, res: Response) => {
 
         const checkout = req.body;
 
-        // Offload to Redis Queue
+
         await ingestionQueue.add('process-webhook', {
             type: 'checkout-started',
             tenantId: tenant.id,

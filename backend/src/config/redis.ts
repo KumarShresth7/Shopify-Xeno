@@ -6,4 +6,4 @@ export const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
 });
 
-console.log('🔌 Redis connection initialized');
+console.log('Redis connection initialized');

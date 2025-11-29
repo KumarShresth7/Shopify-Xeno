@@ -96,7 +96,6 @@ export default function ProductsPage() {
           </table>
         </div>
 
-        {/* Pagination Footer */}
         {pagination.totalPages > 1 && (
           <div className="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
