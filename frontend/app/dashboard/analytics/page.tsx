@@ -10,7 +10,6 @@ import { TrendingUp, ShoppingCart, AlertCircle, RefreshCw } from 'lucide-react';
 
 const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-// 1. Define the fetcher function outside the component
 const fetchAnalyticsData = async () => {
   const [carts, conv, prod, seg] = await Promise.all([
     apiClient.get('/insights/abandoned-carts'),
@@ -28,29 +27,27 @@ const fetchAnalyticsData = async () => {
 };
 
 export default function AnalyticsPage() {
-  // 2. Use the hook with a 5-second refresh interval
   const { data, error, isLoading } = useSWR('analytics-dashboard', fetchAnalyticsData, {
-    refreshInterval: 5000, // Polls every 5 seconds
+    refreshInterval: 5000,
     revalidateOnFocus: true,
   });
 
   if (isLoading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-4 border-slate-100 border-t-blue-600 animate-spin"></div>
+        <div className="w-12 h-12 rounded-full border-4 border-muted border-t-primary animate-spin"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-[50vh] items-center justify-center text-red-500">
+      <div className="flex h-[50vh] items-center justify-center text-destructive">
         Failed to load analytics data.
       </div>
     );
   }
 
-  // 3. Render data safely (data is guaranteed to be present if !isLoading && !error)
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex justify-between items-end">
@@ -58,48 +55,22 @@ export default function AnalyticsPage() {
           <h1 className="text-2xl font-bold text-foreground">Live Analytics</h1>
           <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             Updating in real-time
           </p>
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <KPICard 
-          title="Conversion Rate" 
-          value={`${data?.conv?.conversionRate}%`} 
-          sub="Checkout to Order" 
-          icon={TrendingUp} 
-          color="emerald" 
-        />
-        <KPICard 
-          title="Total Checkouts" 
-          value={data?.conv?.totalCheckouts} 
-          sub="Initiated sessions" 
-          icon={ShoppingCart} 
-          color="blue" 
-        />
-        <KPICard 
-          title="Abandoned Carts" 
-          value={data?.carts?.totalAbandoned} 
-          sub="Last 30 days" 
-          icon={AlertCircle} 
-          color="red" 
-        />
-        <KPICard 
-          title="Lost Revenue" 
-          value={`$${data?.carts?.potentialRevenue?.toFixed(2)}`} 
-          sub="From abandoned carts" 
-          icon={RefreshCw} 
-          color="amber" 
-        />
+        <KPICard title="Conversion Rate" value={`${data?.conv?.conversionRate}%`} sub="Checkout to Order" icon={TrendingUp} color="emerald" />
+        <KPICard title="Total Checkouts" value={data?.conv?.totalCheckouts} sub="Initiated sessions" icon={ShoppingCart} color="blue" />
+        <KPICard title="Abandoned Carts" value={data?.carts?.totalAbandoned} sub="Last 30 days" icon={AlertCircle} color="red" />
+        <KPICard title="Lost Revenue" value={`$${data?.carts?.potentialRevenue?.toFixed(2)}`} sub="From abandoned carts" icon={RefreshCw} color="amber" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Product Performance Chart */}
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
           <h3 className="text-lg font-bold text-foreground mb-6">Top Products by Revenue</h3>
           <div className="h-80">
@@ -109,7 +80,7 @@ export default function AnalyticsPage() {
                 <XAxis type="number" hide />
                 <YAxis dataKey="title" type="category" width={100} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                 <Tooltip 
-                  cursor={{ fill: 'hsl(var(--muted)/0.5)' }} 
+                  cursor={{ fill: 'hsl(var(--muted)/0.3)' }} 
                   contentStyle={{ 
                     backgroundColor: 'hsl(var(--popover))',
                     borderColor: 'hsl(var(--border))',
@@ -124,7 +95,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Customer Segments Pie */}
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
           <h3 className="text-lg font-bold text-foreground mb-6">Customer Segments</h3>
           <div className="h-80 flex flex-col items-center justify-center">
@@ -138,6 +108,7 @@ export default function AnalyticsPage() {
                   outerRadius={100}
                   paddingAngle={5}
                   dataKey="customerCount"
+                  stroke="hsl(var(--card))"
                 >
                   {data?.seg.map((_: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -151,7 +122,7 @@ export default function AnalyticsPage() {
                     color: 'hsl(var(--popover-foreground))'
                   }}
                 />
-                <Legend verticalAlign="bottom" height={36} />
+                <Legend verticalAlign="bottom" height={36} formatter={(value) => <span className="text-foreground">{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -163,10 +134,10 @@ export default function AnalyticsPage() {
 
 const KPICard = ({ title, value, sub, icon: Icon, color }: any) => {
   const colors: any = {
-    emerald: 'bg-emerald-500/10 text-emerald-600',
-    blue: 'bg-blue-500/10 text-blue-600',
-    red: 'bg-red-500/10 text-red-600',
-    amber: 'bg-amber-500/10 text-amber-600',
+    emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    red: 'bg-red-500/10 text-red-600 dark:text-red-400',
+    amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   };
 
   return (

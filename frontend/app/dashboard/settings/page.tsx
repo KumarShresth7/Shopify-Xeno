@@ -27,7 +27,7 @@ export default function SettingsPage() {
       await apiClient.post('/tenant/shopify-token', formData);
       setMsg({ type: 'success', text: 'Settings updated successfully' });
       setStatus({ configured: true, shopDomain: formData.shopDomain });
-      setFormData(prev => ({ ...prev, accessToken: '' })); // Clear sensitive field
+      setFormData(prev => ({ ...prev, accessToken: '' }));
     } catch (err: any) {
       setMsg({ type: 'error', text: err.response?.data?.message || 'Update failed' });
     } finally {
@@ -36,19 +36,19 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <div className="max-w-4xl space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-500 mt-1 text-sm">Manage your Shopify integration and API credentials.</p>
+        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+        <p className="text-muted-foreground mt-1 text-sm">Manage your Shopify integration and API credentials.</p>
       </div>
 
-      <div className={`p-4 rounded-xl border ${status.configured ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'} flex items-start gap-4`}>
-        {status.configured ? <ShieldCheck className="text-emerald-600 mt-0.5" /> : <AlertTriangle className="text-amber-600 mt-0.5" />}
+      <div className={`p-4 rounded-xl border ${status.configured ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-amber-500/10 border-amber-500/20'} flex items-start gap-4`}>
+        {status.configured ? <ShieldCheck className="text-emerald-600 dark:text-emerald-400 mt-0.5" /> : <AlertTriangle className="text-amber-600 dark:text-amber-400 mt-0.5" />}
         <div>
-          <h3 className={`font-semibold ${status.configured ? 'text-emerald-900' : 'text-amber-900'}`}>
+          <h3 className={`font-semibold ${status.configured ? 'text-emerald-900 dark:text-emerald-100' : 'text-amber-900 dark:text-amber-100'}`}>
             {status.configured ? 'Integration Active' : 'Configuration Required'}
           </h3>
-          <p className={`text-sm mt-1 ${status.configured ? 'text-emerald-700' : 'text-amber-700'}`}>
+          <p className={`text-sm mt-1 ${status.configured ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
             {status.configured 
               ? `Connected to ${status.shopDomain}. Data sync is enabled.` 
               : 'Connect your Shopify store to start syncing data.'}
@@ -56,16 +56,16 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="font-semibold text-slate-900">API Configuration</h2>
-          <p className="text-xs text-slate-500 mt-1">Provide your Shopify Admin API credentials.</p>
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-border bg-muted/20">
+          <h2 className="font-semibold text-foreground">API Configuration</h2>
+          <p className="text-xs text-muted-foreground mt-1">Provide your Shopify Admin API credentials.</p>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
                 <LinkIcon size={16} /> Shop Domain
               </label>
               <Input
@@ -77,7 +77,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
                 <Key size={16} /> Admin API Access Token
               </label>
               <Input
@@ -87,7 +87,7 @@ export default function SettingsPage() {
                 onChange={e => setFormData({ ...formData, accessToken: e.target.value })}
                 className="font-mono text-sm"
               />
-              <p className="text-xs text-slate-400 flex items-center gap-1">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Info size={12} /> Token is encrypted on storage. Leave blank to keep current.
               </p>
             </div>
@@ -95,7 +95,7 @@ export default function SettingsPage() {
 
           {msg && (
             <div className={`text-sm px-4 py-3 rounded-lg ${
-              msg.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+              msg.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/10 text-destructive'
             }`}>
               {msg.text}
             </div>

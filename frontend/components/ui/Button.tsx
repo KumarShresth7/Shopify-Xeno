@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
 }
@@ -13,13 +13,14 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const base = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed';
+  const base = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/30 hover:shadow-md hover:shadow-blue-600/40 border border-transparent',
-    secondary: 'bg-slate-900 hover:bg-slate-800 text-white shadow-sm',
-    outline: 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200',
-    ghost: 'hover:bg-slate-100 text-slate-600 hover:text-slate-900',
+    primary: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm',
+    outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+    ghost: 'hover:bg-accent hover:text-accent-foreground',
+    destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
   };
 
   const sizes = {
