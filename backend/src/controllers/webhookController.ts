@@ -3,9 +3,9 @@ import crypto from 'crypto';
 import prisma from '../config/database.js';
 import { ingestionQueue } from '../services/queueService.js';
 
-
-const verifyWebhook = (data: string, hmacHeader: string, secret: string): boolean => {
-    const hash = crypto.createHmac('sha256', secret).update(data, 'utf8').digest('base64');
+// Verify Shopify webhook signature
+const verifyWebhook = (data: Buffer, hmacHeader: string, secret: string): boolean => {
+    const hash = crypto.createHmac('sha256', secret).update(data).digest('base64');
     return hash === hmacHeader;
 };
 
@@ -13,14 +13,22 @@ export const handleCartAbandoned = async (req: Request, res: Response) => {
     try {
         const hmac = req.get('X-Shopify-Hmac-SHA256');
         const shopDomain = req.get('X-Shopify-Shop-Domain');
-        const rawBody = JSON.stringify(req.body);
 
+        // FIX: Use the raw buffer attached by the middleware in routes/webhook.ts
+        const rawBody = (req as any).rawBody;
 
+        if (!rawBody) {
+            console.error('❌ Raw body missing. Ensure express.json verify is set.');
+            return res.status(500).json({ message: 'Internal Server Error' });
+        }
+
+        // Verify webhook
         if (!hmac || !verifyWebhook(rawBody, hmac, process.env.SHOPIFY_API_SECRET!)) {
             console.log('⚠️  Invalid webhook signature');
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
+        // Get tenant by shop domain
         const tenant = await prisma.tenant.findUnique({
             where: { shopDomain: shopDomain! },
         });
@@ -32,7 +40,7 @@ export const handleCartAbandoned = async (req: Request, res: Response) => {
 
         const cart = req.body;
 
-
+        // Offload to Redis Queue
         await ingestionQueue.add('process-webhook', {
             type: 'cart-abandoned',
             tenantId: tenant.id,
@@ -54,7 +62,9 @@ export const handleCheckoutStarted = async (req: Request, res: Response) => {
     try {
         const hmac = req.get('X-Shopify-Hmac-SHA256');
         const shopDomain = req.get('X-Shopify-Shop-Domain');
-        const rawBody = JSON.stringify(req.body);
+
+        // FIX: Use rawBody here too
+        const rawBody = (req as any).rawBody;
 
         if (!hmac || !verifyWebhook(rawBody, hmac, process.env.SHOPIFY_API_SECRET!)) {
             console.log('⚠️  Invalid webhook signature');
@@ -71,7 +81,6 @@ export const handleCheckoutStarted = async (req: Request, res: Response) => {
         }
 
         const checkout = req.body;
-
 
         await ingestionQueue.add('process-webhook', {
             type: 'checkout-started',
