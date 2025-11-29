@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import prisma from '../config/database.js';
+import { ingestionQueue } from '../services/queueService.js';
 
-// Verify Shopify webhook signature
+
 const verifyWebhook = (data: string, hmacHeader: string, secret: string): boolean => {
     const hash = crypto.createHmac('sha256', secret).update(data, 'utf8').digest('base64');
     return hash === hmacHeader;
@@ -14,13 +15,12 @@ export const handleCartAbandoned = async (req: Request, res: Response) => {
         const shopDomain = req.get('X-Shopify-Shop-Domain');
         const rawBody = JSON.stringify(req.body);
 
-        // Verify webhook
+
         if (!hmac || !verifyWebhook(rawBody, hmac, process.env.SHOPIFY_API_SECRET!)) {
             console.log('⚠️  Invalid webhook signature');
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        // Get tenant by shop domain
         const tenant = await prisma.tenant.findUnique({
             where: { shopDomain: shopDomain! },
         });
@@ -32,31 +32,17 @@ export const handleCartAbandoned = async (req: Request, res: Response) => {
 
         const cart = req.body;
 
-        // Store cart abandoned event
-        await prisma.abandonedCart.upsert({
-            where: {
-                cartToken_tenantId: {
-                    cartToken: cart.token,
-                    tenantId: tenant.id,
-                },
-            },
-            update: {
-                totalPrice: parseFloat(cart.total_price || '0'),
-                abandonedAt: new Date(cart.updated_at),
-                lineItems: cart.line_items,
-            },
-            create: {
-                tenantId: tenant.id,
-                cartToken: cart.token,
-                customerId: cart.customer?.id ? BigInt(cart.customer.id) : null,
-                customerEmail: cart.email || cart.customer?.email,
-                totalPrice: parseFloat(cart.total_price || '0'),
-                abandonedAt: new Date(cart.updated_at),
-                lineItems: cart.line_items,
-            },
+
+        await ingestionQueue.add('process-webhook', {
+            type: 'cart-abandoned',
+            tenantId: tenant.id,
+            payload: cart,
+        }, {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 1000 }
         });
 
-        console.log('✅ Cart abandoned event recorded:', cart.token);
+        console.log('✅ Cart abandoned event queued:', cart.token);
         res.status(200).json({ success: true });
     } catch (error: any) {
         console.error('Webhook error:', error);
@@ -86,29 +72,17 @@ export const handleCheckoutStarted = async (req: Request, res: Response) => {
 
         const checkout = req.body;
 
-        // Store checkout started event
-        await prisma.checkout.upsert({
-            where: {
-                id_tenantId: {
-                    id: BigInt(checkout.id),
-                    tenantId: tenant.id,
-                },
-            },
-            update: {
-                completed: checkout.completed_at ? true : false,
-            },
-            create: {
-                id: BigInt(checkout.id),
-                tenantId: tenant.id,
-                customerId: checkout.customer?.id ? BigInt(checkout.customer.id) : null,
-                customerEmail: checkout.email || checkout.customer?.email,
-                totalPrice: parseFloat(checkout.total_price || '0'),
-                completed: checkout.completed_at ? true : false,
-                createdAt: new Date(checkout.created_at),
-            },
+        // Offload to Redis Queue
+        await ingestionQueue.add('process-webhook', {
+            type: 'checkout-started',
+            tenantId: tenant.id,
+            payload: checkout,
+        }, {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 1000 }
         });
 
-        console.log('✅ Checkout started event recorded:', checkout.id);
+        console.log('✅ Checkout started event queued:', checkout.id);
         res.status(200).json({ success: true });
     } catch (error: any) {
         console.error('Webhook error:', error);
