@@ -1,11 +1,14 @@
 import { Router } from 'express';
-import { handleCartAbandoned, handleCheckoutStarted } from '../controllers/webhookController.js';
+import {
+    handleCartAbandoned,
+    handleCheckoutStarted,
+    handleOrderCreated
+} from '../controllers/webhookController.js';
 
 const router = Router();
 
-// REMOVED: router.use(express.json(...)) - Handled globally in index.ts now
-
 router.post('/cart-abandoned', handleCartAbandoned);
 router.post('/checkout-started', handleCheckoutStarted);
+router.post('/order-created', handleOrderCreated);
 
 export default router;

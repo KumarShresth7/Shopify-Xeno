@@ -47,7 +47,7 @@ export const getRevenueTrend = async (req: TenantRequest, res: Response) => {
                 lte: new Date(endDate as string),
             };
         } else {
-
+            // Default to last 30 days
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             where.createdAt = {
@@ -176,7 +176,7 @@ export const getAbandonedCarts = async (req: TenantRequest, res: Response) => {
                 where: {
                     tenantId,
                     abandonedAt: {
-                        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+                        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
                     },
                 },
                 _count: true,
@@ -217,7 +217,7 @@ export const getConversionMetrics = async (req: TenantRequest, res: Response) =>
     try {
         const tenantId = req.tenant.id;
 
-        const [checkoutsCount, completedCheckouts, totalOrders, avgOrderValue] = await Promise.all([
+        const [checkoutsCount, completedCheckouts, totalOrders, avgOrderValue, recentCheckouts] = await Promise.all([
             prisma.checkout.count({ where: { tenantId } }),
             prisma.checkout.count({ where: { tenantId, completed: true } }),
             prisma.order.count({ where: { tenantId } }),
@@ -225,10 +225,28 @@ export const getConversionMetrics = async (req: TenantRequest, res: Response) =>
                 where: { tenantId },
                 _avg: { totalPrice: true },
             }),
+
+            prisma.checkout.findMany({
+                where: { tenantId },
+                orderBy: { createdAt: 'desc' },
+                take: 5,
+                select: {
+                    id: true,
+                    customerEmail: true,
+                    totalPrice: true,
+                    completed: true,
+                    createdAt: true
+                }
+            })
         ]);
 
         const conversionRate =
             checkoutsCount > 0 ? ((completedCheckouts / checkoutsCount) * 100).toFixed(2) : '0';
+
+
+        const serialize = (obj: any) => JSON.parse(JSON.stringify(obj, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+        ));
 
         res.json({
             success: true,
@@ -238,6 +256,7 @@ export const getConversionMetrics = async (req: TenantRequest, res: Response) =>
                 totalOrders,
                 avgOrderValue: parseFloat(Number(avgOrderValue._avg.totalPrice || 0).toFixed(2)),
                 conversionRate: parseFloat(conversionRate),
+                recentCheckouts: serialize(recentCheckouts),
             },
         });
     } catch (error: any) {

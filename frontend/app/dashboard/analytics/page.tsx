@@ -6,7 +6,7 @@ import useSWR from 'swr';
 import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
-import { TrendingUp, ShoppingCart, AlertCircle, RefreshCw } from 'lucide-react';
+import { TrendingUp, ShoppingCart, AlertCircle, RefreshCw, User, Calendar, CheckCircle2, Clock } from 'lucide-react';
 
 const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -63,6 +63,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <KPICard title="Conversion Rate" value={`${data?.conv?.conversionRate}%`} sub="Checkout to Order" icon={TrendingUp} color="emerald" />
         <KPICard title="Total Checkouts" value={data?.conv?.totalCheckouts} sub="Initiated sessions" icon={ShoppingCart} color="blue" />
@@ -70,6 +71,7 @@ export default function AnalyticsPage() {
         <KPICard title="Lost Revenue" value={`$${data?.carts?.potentialRevenue?.toFixed(2)}`} sub="From abandoned carts" icon={RefreshCw} color="amber" />
       </div>
 
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
           <h3 className="text-lg font-bold text-foreground mb-6">Top Products by Revenue</h3>
@@ -125,6 +127,97 @@ export default function AnalyticsPage() {
                 <Legend verticalAlign="bottom" height={36} formatter={(value) => <span className="text-foreground">{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Abandoned Checkouts Table (Existing) */}
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-border bg-muted/20">
+            <h3 className="text-lg font-bold text-foreground">Abandoned Carts</h3>
+            <p className="text-sm text-muted-foreground">Recent carts that were not completed.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
+                </tr>
+              </thead>
+              <tbody className="bg-card divide-y divide-border">
+                {data?.carts?.recentCarts?.map((cart: any, index: number) => (
+                  <tr key={index} className="hover:bg-muted/50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <User size={16} className="text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">{cart.customerEmail || 'Guest'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      ${Number(cart.totalPrice).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      {new Date(cart.abandonedAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* NEW: Live Checkouts Feed */}
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-border bg-muted/20">
+            <h3 className="text-lg font-bold text-foreground">Live Checkouts Feed</h3>
+            <p className="text-sm text-muted-foreground">Real-time "Checkout Started" events.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-card divide-y divide-border">
+                {data?.conv?.recentCheckouts?.map((checkout: any, index: number) => (
+                  <tr key={index} className="hover:bg-muted/50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <ShoppingCart size={16} className="text-blue-500" />
+                        <span className="text-sm font-medium text-foreground">{checkout.customerEmail || 'Guest'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-foreground">
+                      ${Number(checkout.totalPrice).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {checkout.completed ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle2 size={12} /> Purchased
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                          <Clock size={12} /> In Progress
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {(!data?.conv?.recentCheckouts || data.conv.recentCheckouts.length === 0) && (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-12 text-center text-muted-foreground">
+                      No recent checkout events.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

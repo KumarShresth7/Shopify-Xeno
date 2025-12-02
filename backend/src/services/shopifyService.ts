@@ -20,8 +20,6 @@ export class ShopifyService {
                     'Content-Type': 'application/json',
                 },
             });
-            console.log('🔑 Token Scopes:', response.headers['x-shopify-access-token-scopes']);
-            console.log('Response data: ', response.data)
             return response.data;
         } catch (error: any) {
             console.error(`Shopify API Error for ${endpoint}:`, error.message);
@@ -39,6 +37,10 @@ export class ShopifyService {
 
     async fetchProducts() {
         return this.makeRequest('products.json?limit=250');
+    }
+
+    async fetchAbandonedCheckouts() {
+        return this.makeRequest('checkouts.json?status=open&limit=250');
     }
 
     async syncCustomers(tenantId: number) {
@@ -179,33 +181,78 @@ export class ShopifyService {
         return orders.length;
     }
 
+
+    async syncAbandonedCheckouts(tenantId: number) {
+        const data = await this.fetchAbandonedCheckouts();
+        const checkouts = data.checkouts || [];
+
+        for (const checkout of checkouts) {
+
+            await prisma.abandonedCart.upsert({
+                where: {
+                    cartToken_tenantId: {
+                        cartToken: checkout.token,
+                        tenantId,
+                    },
+                },
+                update: {
+                    totalPrice: parseFloat(checkout.total_price || '0'),
+                    abandonedAt: new Date(checkout.updated_at),
+                    lineItems: checkout.line_items,
+                    customerEmail: checkout.email || checkout.customer?.email,
+                },
+                create: {
+                    tenantId,
+                    cartToken: checkout.token,
+                    customerId: checkout.customer?.id ? BigInt(checkout.customer.id) : null,
+                    customerEmail: checkout.email || checkout.customer?.email,
+                    totalPrice: parseFloat(checkout.total_price || '0'),
+                    abandonedAt: new Date(checkout.updated_at),
+                    lineItems: checkout.line_items,
+                    createdAt: new Date(checkout.created_at || checkout.updated_at),
+                },
+            });
+        }
+
+        return checkouts.length;
+    }
+
     async syncAllData(tenantId: number) {
-        console.log(`Starting sync for tenant ${tenantId}...`);
+        console.log(`🔄 Starting sync for tenant ${tenantId}...`);
         const results = {
             customers: 0,
             products: 0,
             orders: 0,
+            abandonedCarts: 0,
         };
 
         try {
             results.customers = await this.syncCustomers(tenantId);
-            console.log(`Synced ${results.customers} customers`);
+            console.log(`✅ Synced ${results.customers} customers`);
         } catch (error) {
-            console.error('Error syncing customers:', error);
+            console.error('❌ Error syncing customers:', error);
         }
 
         try {
             results.products = await this.syncProducts(tenantId);
-            console.log(`Synced ${results.products} products`);
+            console.log(`✅ Synced ${results.products} products`);
         } catch (error) {
-            console.error('Error syncing products:', error);
+            console.error('❌ Error syncing products:', error);
         }
 
         try {
             results.orders = await this.syncOrders(tenantId);
-            console.log(`Synced ${results.orders} orders`);
+            console.log(`✅ Synced ${results.orders} orders`);
         } catch (error) {
-            console.error('Error syncing orders:', error);
+            console.error('❌ Error syncing orders:', error);
+        }
+
+
+        try {
+            results.abandonedCarts = await this.syncAbandonedCheckouts(tenantId);
+            console.log(`✅ Synced ${results.abandonedCarts} abandoned checkouts`);
+        } catch (error) {
+            console.error('❌ Error syncing abandoned checkouts:', error);
         }
 
         return results;
