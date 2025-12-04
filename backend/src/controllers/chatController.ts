@@ -3,6 +3,7 @@ import { TenantRequest } from '../middleware/tenantContext.js';
 import prisma from '../config/database.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export const chatWithAnalyst = async (req: TenantRequest, res: Response) => {
@@ -11,11 +12,31 @@ export const chatWithAnalyst = async (req: TenantRequest, res: Response) => {
         const tenantId = req.tenant.id;
 
 
-        const [overview, topProducts, recentSales, customerStats] = await Promise.all([
+        const [
+            orderStats,
+            cartStats,
+            checkoutStats,
+            topProducts,
+            recentOrders
+        ] = await Promise.all([
 
             prisma.order.aggregate({
                 where: { tenantId },
                 _sum: { totalPrice: true },
+                _count: { id: true },
+            }),
+
+
+            prisma.abandonedCart.aggregate({
+                where: { tenantId },
+                _sum: { totalPrice: true },
+                _count: { id: true },
+            }),
+
+
+            prisma.checkout.groupBy({
+                by: ['completed'],
+                where: { tenantId },
                 _count: { id: true },
             }),
 
@@ -33,69 +54,77 @@ export const chatWithAnalyst = async (req: TenantRequest, res: Response) => {
                 where: { tenantId },
                 orderBy: { createdAt: 'desc' },
                 take: 3,
-                select: {
-                    totalPrice: true,
-                    createdAt: true,
-                    customer: { select: { firstName: true, email: true } }
-                }
-            }),
-
-            prisma.customer.count({ where: { tenantId } })
+                select: { totalPrice: true, createdAt: true }
+            })
         ]);
 
 
-        const contextPayload = {
-            storeStats: {
-                revenue: overview._sum.totalPrice || 0,
-                totalOrders: overview._count.id,
-                totalCustomers: customerStats,
+
+
+        const completedCheckouts = checkoutStats.find(c => c.completed)?._count.id || 0;
+        const totalCheckouts = checkoutStats.reduce((acc, curr) => acc + curr._count.id, 0);
+        const conversionRate = totalCheckouts > 0
+            ? ((completedCheckouts / totalCheckouts) * 100).toFixed(1) + '%'
+            : '0%';
+
+
+        const analysisContext = {
+            performance: {
+                total_revenue: orderStats._sum.totalPrice || 0,
+                total_orders: orderStats._count.id,
+                conversion_rate: conversionRate,
             },
-            trendingProducts: topProducts.map(p => ({
+            opportunities: {
+                abandoned_carts: cartStats._count.id,
+                lost_revenue: cartStats._sum.totalPrice || 0,
+            },
+            top_products: topProducts.map(p => ({
                 name: p.title,
-                unitsSold: p._sum.quantity,
-                revenueGenerated: p._sum.price
+                sold: p._sum.quantity,
+                revenue: p._sum.price
             })),
-            recentActivity: recentSales.map(o => ({
+            latest_activity: recentOrders.map(o => ({
                 amount: o.totalPrice,
-                customer: o.customer?.firstName || o.customer?.email || "Guest",
                 date: o.createdAt.toISOString().split('T')[0]
             }))
         };
 
-        const systemPrompt = `
-        You are an expert E-commerce Data Analyst for Xeno.
-        You have access to the following REAL-TIME store data. 
-        Answer the user's question based ONLY on this data.
-        
-        DATA CONTEXT:
-        ${JSON.stringify(contextPayload, null, 2)}
-        
-        GUIDELINES:
-        - If the user asks for revenue, give the exact number formatted as currency.
-        - If asked about "best products", refer to the trending products list.
-        - Be concise, friendly, and professional.
-        - If the answer isn't in the data, say "I don't have that specific data point right now."
-        `;
 
-        // --- 3. GENERATION LAYER (The "G" in RAG) ---
-        // We use Gemini 1.5 Flash for speed and low latency.
+        const cleanContext = JSON.parse(JSON.stringify(analysisContext, (_, v) =>
+            typeof v === 'bigint' ? v.toString() : v
+        ));
+
+
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        const result = await model.generateContent([
-            systemPrompt,
-            `User Question: ${message}`
-        ]);
+        const systemPrompt = `
+        You are "Xeno", a Senior eCommerce Strategist & Data Analyst.
+        
+        YOUR GOAL: Provide insights, not just data.
+        
+        REAL-TIME DATA CONTEXT:
+        ${JSON.stringify(cleanContext, null, 2)}
+        
+        INSTRUCTIONS:
+        1. **Be Analytical:** If lost revenue is high, mention it as a "hidden opportunity".
+        2. **Conversion Focus:** If conversion rate is under 2%, suggest checkout improvements.
+        3. **Tone:** Professional but enthusiastic. Use emojis sparingly.
+        4. **Format:** Use bullet points for lists. Keep responses concise (under 3 sentences unless asked for detail).
+        5. **Currency:** Format all money in the store's currency (assume USD or matching context).
+        
+        User Question: "${message}"
+        `;
 
-        const response = await result.response;
-        const reply = response.text();
+        const result = await model.generateContent(systemPrompt);
+        const reply = result.response.text();
 
         res.json({ success: true, reply });
 
     } catch (error: any) {
-        console.error('Gemini Chat Error:', error);
+        console.error('AI Analyst Error:', error);
         res.status(500).json({
             success: false,
-            reply: "I'm having trouble analyzing the data right now. Please check your API key."
+            reply: "My analytics engine is cooling down. Please try again in a moment."
         });
     }
 };

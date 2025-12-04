@@ -1,6 +1,6 @@
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Sidebar from '@/components/Sidebar';
-import ChatWidget from '@/components/ChatWidget'; // <--- Import the new component
+import ChatWidget from '@/components/ChatWidget';
 
 export default function DashboardLayout({
   children,
@@ -17,7 +17,7 @@ export default function DashboardLayout({
           </div>
         </main>
         
-        {/* The AI Chatbot lives here */}
+
         <ChatWidget />
       </div>
     </ProtectedRoute>
