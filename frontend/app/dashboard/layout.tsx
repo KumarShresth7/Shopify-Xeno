@@ -1,5 +1,6 @@
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Sidebar from '@/components/Sidebar';
+import ChatWidget from '@/components/ChatWidget';
 
 export default function DashboardLayout({
   children,
@@ -8,7 +9,6 @@ export default function DashboardLayout({
 }) {
   return (
     <ProtectedRoute>
-      {/* Updated class: bg-background ensures it uses the black variable from globals.css */}
       <div className="min-h-screen bg-background transition-colors duration-300">
         <Sidebar />
         <main className="pl-72 transition-all duration-200">
@@ -16,6 +16,9 @@ export default function DashboardLayout({
             {children}
           </div>
         </main>
+        
+
+        <ChatWidget />
       </div>
     </ProtectedRoute>
   );
