@@ -10,17 +10,11 @@ export const handleCartAbandoned = async (req: Request, res: Response) => {
     try {
         const shopDomain = req.get('X-Shopify-Shop-Domain');
 
-        // --- BYPASS START ---
-        // We are skipping HMAC verification for the demo to ensure data flows.
         console.log(`⚠️ [Dev Mode] Skipping HMAC check for Abandoned Cart.`);
-        // --- BYPASS END ---
-
-        // 1. Basic Validation: Ensure we at least have the shop domain header
         if (!shopDomain) {
             return res.status(400).json({ message: 'Missing Shop Domain Header' });
         }
 
-        // 2. Find Tenant (This is now your primary security check)
         const tenant = await prisma.tenant.findUnique({
             where: { shopDomain: shopDomain as string },
         });
@@ -30,7 +24,6 @@ export const handleCartAbandoned = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'Tenant not found' });
         }
 
-        // 3. Queue the Job
         await ingestionQueue.add('process-webhook', {
             type: 'cart-abandoned',
             tenantId: tenant.id,
@@ -53,9 +46,7 @@ export const handleCheckoutStarted = async (req: Request, res: Response) => {
     try {
         const shopDomain = req.get('X-Shopify-Shop-Domain');
 
-        // --- BYPASS START ---
         console.log(`⚠️ [Dev Mode] Skipping HMAC check for Checkout Started.`);
-        // --- BYPASS END ---
 
         if (!shopDomain) {
             return res.status(400).json({ message: 'Missing Shop Domain Header' });
@@ -86,9 +77,7 @@ export const handleOrderCreated = async (req: Request, res: Response) => {
     try {
         const shopDomain = req.get('X-Shopify-Shop-Domain');
 
-        // --- BYPASS START ---
         console.log(`⚠️ [Dev Mode] Skipping HMAC check for Order Created.`);
-        // --- BYPASS END ---
 
         if (!shopDomain) {
             return res.status(400).json({ message: 'Missing Shop Domain Header' });

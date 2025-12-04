@@ -8,7 +8,8 @@ export default function DashboardLayout({
 }) {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-slate-50">
+      {/* Updated class: bg-background ensures it uses the black variable from globals.css */}
+      <div className="min-h-screen bg-background transition-colors duration-300">
         <Sidebar />
         <main className="pl-72 transition-all duration-200">
           <div className="max-w-7xl mx-auto p-8 animate-fade-in">
