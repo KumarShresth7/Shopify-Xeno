@@ -1,18 +1,20 @@
 import IORedis from 'ioredis';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
-
-// Check if the URL indicates a secure connection
 const isSecure = REDIS_URL.startsWith('rediss://');
 
 export const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
-    // Add TLS options if using a secure connection
     ...(isSecure ? {
         tls: {
-            rejectUnauthorized: false // Often needed for self-signed certs on cloud providers
+            rejectUnauthorized: false
         }
     } : {})
 });
+redisConnection.on('error', (err) => {
+    console.error('Redis Client Error:', err);
+});
 
-console.log(`Redis connection initialized (Secure: ${isSecure})`);
+redisConnection.on('connect', () => {
+    console.log(`Redis connected successfully (Secure: ${isSecure})`);
+});
