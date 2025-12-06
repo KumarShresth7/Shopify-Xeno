@@ -17,8 +17,8 @@ export default function RootLayout({
       <body className="antialiased bg-background text-foreground">
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"  // <--- Forces Dark Mode on first load
-          enableSystem={false} // <--- Ignores system preference to enforce your aesthetic
+          defaultTheme="dark"  
+          enableSystem={false}
           disableTransitionOnChange
         >
           {children}
