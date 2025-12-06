@@ -58,7 +58,7 @@ export default function RegisterPage() {
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
-            className="bg-slate-50 border-slate-200 focus:bg-white"
+            className="bg-slate-50 border-slate-200 focus:bg-white text-slate-900 placeholder:text-slate-400"
           />
 
           <Input
@@ -68,7 +68,7 @@ export default function RegisterPage() {
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
-            className="bg-slate-50 border-slate-200 focus:bg-white"
+            className="bg-slate-50 border-slate-200 focus:bg-white text-slate-900 placeholder:text-slate-400"
           />
 
           <div className="relative">
@@ -79,7 +79,7 @@ export default function RegisterPage() {
               value={formData.shopDomain}
               onChange={(e) => setFormData({ ...formData, shopDomain: e.target.value })}
               required
-              className="bg-slate-50 border-slate-200 focus:bg-white"
+              className="bg-slate-50 border-slate-200 focus:bg-white text-slate-900 placeholder:text-slate-400"
             />
             <div className="absolute right-3 top-[34px] text-slate-400">
               <span className="text-xs">.myshopify.com</span>

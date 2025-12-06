@@ -54,7 +54,7 @@ export default function LoginPage() {
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
-            className="bg-slate-50 border-slate-200 focus:bg-white transition-all"
+            className="bg-slate-50 border-slate-200 focus:bg-white transition-all text-slate-900 placeholder:text-slate-400"
           />
 
           <div>
@@ -65,7 +65,7 @@ export default function LoginPage() {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
-              className="bg-slate-50 border-slate-200 focus:bg-white transition-all"
+              className="bg-slate-50 border-slate-200 focus:bg-white transition-all text-slate-900 placeholder:text-slate-400"
             />
             <div className="text-right mt-1">
               <Link href="#" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
