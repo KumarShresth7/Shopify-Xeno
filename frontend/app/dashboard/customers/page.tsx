@@ -98,7 +98,7 @@ export default function CustomersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-emerald-600">
-                      ${Number(customer.totalSpent).toFixed(2)}
+                      ₹{Number(customer.totalSpent).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {new Date(customer.createdAt).toLocaleDateString()}

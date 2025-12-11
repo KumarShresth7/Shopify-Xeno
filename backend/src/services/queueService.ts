@@ -11,12 +11,14 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
     console.log(`👷 [Worker] Picking up job: ${job.name} (Type: ${job.data.type || 'sync'})`);
 
     try {
+
         if (job.name === 'sync-tenant') {
             const { tenantId, shopDomain, accessToken } = job.data;
             const service = new ShopifyService(shopDomain, accessToken);
             await service.syncAllData(tenantId);
             console.log(`✅ [Worker] Sync completed for tenant ${tenantId}`);
         }
+
 
         else if (job.name === 'process-webhook') {
             const { type, payload, tenantId } = job.data;
@@ -72,6 +74,19 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
                 console.log(`📦 [DB] Processing Order #${order.order_number}`);
 
 
+                if (order.checkout_id) {
+                    try {
+                        await prisma.checkout.updateMany({
+                            where: { id: BigInt(order.checkout_id), tenantId },
+                            data: { completed: true, updatedAt: new Date() }
+                        });
+                        console.log(`✅ [DB] Linked Checkout ${order.checkout_id} marked as completed.`);
+                    } catch (err) {
+                        console.warn(`⚠️ Could not link checkout ${order.checkout_id}`);
+                    }
+                }
+
+
                 if (order.customer) {
                     await prisma.customer.upsert({
                         where: { id_tenantId: { id: BigInt(order.customer.id), tenantId } },
@@ -79,9 +94,8 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
                             email: order.customer.email,
                             firstName: order.customer.first_name,
                             lastName: order.customer.last_name,
-                            ordersCount: order.customer.orders_count || 1,
-                            totalSpent: parseFloat(order.customer.total_spent || '0'),
                             updatedAt: new Date(order.customer.updated_at),
+
                         },
                         create: {
                             id: BigInt(order.customer.id),
@@ -89,8 +103,8 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
                             email: order.customer.email,
                             firstName: order.customer.first_name,
                             lastName: order.customer.last_name,
-                            ordersCount: order.customer.orders_count || 1,
-                            totalSpent: parseFloat(order.customer.total_spent || '0'),
+                            ordersCount: 1,
+                            totalSpent: 0,
                             createdAt: new Date(order.customer.created_at),
                             updatedAt: new Date(order.customer.updated_at),
                         },
@@ -141,6 +155,29 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
                         });
                     }
                 }
+
+
+                if (order.customer) {
+                    const customerId = BigInt(order.customer.id);
+
+
+                    const aggregate = await prisma.order.aggregate({
+                        where: { customerId, tenantId },
+                        _sum: { totalPrice: true },
+                        _count: { id: true }
+                    });
+
+
+                    await prisma.customer.update({
+                        where: { id_tenantId: { id: customerId, tenantId } },
+                        data: {
+                            totalSpent: aggregate._sum.totalPrice || 0,
+                            ordersCount: aggregate._count.id || 0
+                        }
+                    });
+                    console.log(`💰 [DB] Recalculated Customer ${customerId}: Total Spent = ${aggregate._sum.totalPrice}`);
+                }
+
                 console.log(`✅ [DB] Order #${order.order_number} saved fully!`);
             }
         }

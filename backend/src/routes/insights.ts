@@ -29,4 +29,5 @@ router.get('/conversion-metrics', getConversionMetrics);
 router.get('/product-performance', getProductPerformance);
 router.get('/customer-segments', getCustomerSegments);
 
+
 export default router;

@@ -1,14 +1,48 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import apiClient from '@/lib/api';
 import useSWR from 'swr';
 import {
-  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Label
 } from 'recharts';
-import { TrendingUp, ShoppingCart, AlertCircle, RefreshCw, User, Calendar, CheckCircle2, Clock } from 'lucide-react';
+import { TrendingUp, ShoppingCart, AlertCircle, RefreshCw, User, CheckCircle2, Clock } from 'lucide-react';
 
-const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+// --- 1. Colors & Utils ---
+const SEGMENT_COLORS: Record<string, string> = {
+  'VIP': '#f59e0b',        // Amber
+  'High Value': '#3b82f6', // Blue
+  'Regular': '#10b981',    // Emerald
+  'New': '#94a3b8',        // Slate
+};
+
+const DEFAULT_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444'];
+
+// --- 2. Custom Tooltip Component (Fixes "Not Showing Values") ---
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload; // Access the full data object
+    return (
+      <div className="bg-popover p-3 border border-border shadow-xl rounded-xl min-w-[150px]">
+        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: data.fill }} />
+          <span className="font-bold text-popover-foreground">{data.segment}</span>
+        </div>
+        <div className="space-y-1">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Count:</span>
+            <span className="font-medium text-foreground">{data.customerCount}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Revenue:</span>
+            <span className="font-medium text-emerald-600">₹{data.segmentRevenue.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 const fetchAnalyticsData = async () => {
   const [carts, conv, prod, seg] = await Promise.all([
@@ -32,6 +66,19 @@ export default function AnalyticsPage() {
     revalidateOnFocus: true,
   });
 
+  // Calculate Total Customers for the Center Label
+  const totalCustomers = useMemo(() => {
+    return data?.seg?.reduce((acc: number, curr: any) => acc + curr.customerCount, 0) || 0;
+  }, [data?.seg]);
+
+  // Add Fill Color to Data
+  const chartData = useMemo(() => {
+    return data?.seg?.map((entry: any) => ({
+      ...entry,
+      fill: SEGMENT_COLORS[entry.segment] || DEFAULT_COLORS[0]
+    })) || [];
+  }, [data?.seg]);
+
   if (isLoading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
@@ -49,7 +96,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-10">
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Live Analytics</h1>
@@ -68,16 +115,18 @@ export default function AnalyticsPage() {
         <KPICard title="Conversion Rate" value={`${data?.conv?.conversionRate}%`} sub="Checkout to Order" icon={TrendingUp} color="emerald" />
         <KPICard title="Total Checkouts" value={data?.conv?.totalCheckouts} sub="Initiated sessions" icon={ShoppingCart} color="blue" />
         <KPICard title="Abandoned Carts" value={data?.carts?.totalAbandoned} sub="Last 30 days" icon={AlertCircle} color="red" />
-        <KPICard title="Lost Revenue" value={`$${data?.carts?.potentialRevenue?.toFixed(2)}`} sub="From abandoned carts" icon={RefreshCw} color="amber" />
+        <KPICard title="Lost Revenue" value={`₹${data?.carts?.potentialRevenue?.toFixed(2)}`} sub="From abandoned carts" icon={RefreshCw} color="amber" />
       </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Top Products Chart */}
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
           <h3 className="text-lg font-bold text-foreground mb-6">Top Products by Revenue</h3>
-          <div className="h-80">
+          <div className="h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data?.prod} layout="vertical" margin={{ left: 20 }}>
+              <BarChart data={data?.prod} layout="vertical" margin={{ left: 10, right: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
                 <XAxis type="number" hide />
                 <YAxis dataKey="title" type="category" width={100} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
@@ -89,42 +138,60 @@ export default function AnalyticsPage() {
                     borderRadius: '8px', 
                     color: 'hsl(var(--popover-foreground))',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
-                  }} 
+                  }}
+                  formatter={(value: any) => [`₹${value}`, 'Revenue']}
                 />
-                <Bar dataKey="totalRevenue" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar dataKey="totalRevenue" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
+        {/* --- CUSTOMER SEGMENTS PIE CHART --- */}
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
           <h3 className="text-lg font-bold text-foreground mb-6">Customer Segments</h3>
-          <div className="h-80 flex flex-col items-center justify-center">
+          <div className="h-[350px] flex flex-col items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={data?.seg}
+                  data={chartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
+                  innerRadius={80}  // Increased for better "Donut" look
+                  outerRadius={120}
                   paddingAngle={5}
                   dataKey="customerCount"
-                  stroke="hsl(var(--card))"
+                  nameKey="segment"
+                  stroke="hsl(var(--card))" // Match background for clean separation
+                  strokeWidth={2}
                 >
-                  {data?.seg.map((_: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {chartData.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
+                  
+                  {/* Center Label (Makes it look complete) */}
+                  <Label 
+                    value={totalCustomers} 
+                    position="center" 
+                    className="fill-foreground text-3xl font-bold"
+                  />
+                  <Label 
+                    value="Customers" 
+                    position="center" 
+                    dy={24} // Offset text below the number
+                    className="fill-muted-foreground text-sm font-medium"
+                  />
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--popover))',
-                    borderColor: 'hsl(var(--border))',
-                    borderRadius: '8px',
-                    color: 'hsl(var(--popover-foreground))'
-                  }}
+                
+                {/* Use Custom Tooltip here */}
+                <Tooltip content={<CustomTooltip />} />
+                
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36} 
+                  iconType="circle" 
+                  formatter={(value) => <span className="text-foreground text-sm font-medium ml-2">{value}</span>}
                 />
-                <Legend verticalAlign="bottom" height={36} formatter={(value) => <span className="text-foreground">{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -132,7 +199,7 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Abandoned Carts Table (Updated) */}
+        {/* Abandoned Carts Table */}
         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           <div className="p-6 border-b border-border bg-muted/20">
             <h3 className="text-lg font-bold text-foreground">Abandoned Carts</h3>
@@ -156,11 +223,9 @@ export default function AnalyticsPage() {
                           <User size={16} className="text-muted-foreground" />
                         </div>
                         <div className="flex flex-col">
-                          {/* Display Name clearly */}
                           <span className="text-sm font-medium text-foreground">
                             {cart.customerName || 'Guest'}
                           </span>
-                          {/* Display Email as secondary info */}
                           {cart.customerEmail && (
                             <span className="text-xs text-muted-foreground">{cart.customerEmail}</span>
                           )}
@@ -243,6 +308,7 @@ export default function AnalyticsPage() {
   );
 }
 
+// KPI Card Component
 const KPICard = ({ title, value, sub, icon: Icon, color }: any) => {
   const colors: any = {
     emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',

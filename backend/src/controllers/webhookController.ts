@@ -31,11 +31,11 @@ export const handleCartAbandoned = async (req: Request, res: Response) => {
             backoff: { type: 'exponential', delay: 1000 }
         });
 
-        console.log(`✅ [Webhook] Cart Abandoned event queued for ${shopDomain}`);
+        console.log(`[Webhook] Cart Abandoned event queued for ${shopDomain}`);
         res.status(200).json({ success: true });
 
     } catch (error: any) {
-        console.error('❌ Webhook Controller Error:', error.message);
+        console.error('Webhook Controller Error:', error.message);
         res.status(500).json({ message: 'Error processing webhook' });
     }
 };
@@ -60,11 +60,11 @@ export const handleCheckoutStarted = async (req: Request, res: Response) => {
             payload: req.body,
         }, { attempts: 3, backoff: { type: 'exponential', delay: 1000 } });
 
-        console.log(`✅ [Webhook] Checkout Started event queued for ${shopDomain}`);
+        console.log(`[Webhook] Checkout Started event queued for ${shopDomain}`);
         res.status(200).json({ success: true });
 
     } catch (error: any) {
-        console.error('❌ Webhook Controller Error:', error.message);
+        console.error('Webhook Controller Error:', error.message);
         res.status(500).json({ message: 'Error processing webhook' });
     }
 };
@@ -89,11 +89,11 @@ export const handleOrderCreated = async (req: Request, res: Response) => {
             payload: req.body,
         }, { attempts: 3, backoff: { type: 'exponential', delay: 1000 } });
 
-        console.log(`✅ [Webhook] Order Created event queued for ${shopDomain}`);
+        console.log(`[Webhook] Order Created event queued for ${shopDomain}`);
         res.status(200).json({ success: true });
 
     } catch (error: any) {
-        console.error('❌ Webhook Controller Error:', error.message);
+        console.error('Webhook Controller Error:', error.message);
         res.status(500).json({ message: 'Error processing webhook' });
     }
 };

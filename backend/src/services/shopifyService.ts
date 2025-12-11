@@ -218,7 +218,7 @@ export class ShopifyService {
     }
 
     async syncAllData(tenantId: number) {
-        console.log(`🔄 Starting sync for tenant ${tenantId}...`);
+        console.log(`Starting sync for tenant ${tenantId}...`);
         const results = {
             customers: 0,
             products: 0,
@@ -228,31 +228,31 @@ export class ShopifyService {
 
         try {
             results.customers = await this.syncCustomers(tenantId);
-            console.log(`✅ Synced ${results.customers} customers`);
+            console.log(`Synced ${results.customers} customers`);
         } catch (error) {
-            console.error('❌ Error syncing customers:', error);
+            console.error('Error syncing customers:', error);
         }
 
         try {
             results.products = await this.syncProducts(tenantId);
-            console.log(`✅ Synced ${results.products} products`);
+            console.log(`Synced ${results.products} products`);
         } catch (error) {
-            console.error('❌ Error syncing products:', error);
+            console.error('Error syncing products:', error);
         }
 
         try {
             results.orders = await this.syncOrders(tenantId);
-            console.log(`✅ Synced ${results.orders} orders`);
+            console.log(`Synced ${results.orders} orders`);
         } catch (error) {
-            console.error('❌ Error syncing orders:', error);
+            console.error('Error syncing orders:', error);
         }
 
 
         try {
             results.abandonedCarts = await this.syncAbandonedCheckouts(tenantId);
-            console.log(`✅ Synced ${results.abandonedCarts} abandoned checkouts`);
+            console.log(`Synced ${results.abandonedCarts} abandoned checkouts`);
         } catch (error) {
-            console.error('❌ Error syncing abandoned checkouts:', error);
+            console.error('Error syncing abandoned checkouts:', error);
         }
 
         return results;

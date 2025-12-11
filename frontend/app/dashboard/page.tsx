@@ -177,8 +177,13 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-foreground">${customer.totalSpent.toFixed(2)}</p>
-                    <p className="text-xs text-emerald-600 font-medium">VIP</p>
+                    <p className="text-sm font-bold text-foreground">₹{customer.totalSpent.toFixed(2)}</p>
+                    <p className={`text-xs font-medium ${
+  customer.tier === 'VIP' ? 'text-emerald-600' : 
+  customer.tier === 'High Value' ? 'text-blue-600' : 'text-slate-500'
+}`}>
+  {customer.tier}
+</p>
                   </div>
                 </div>
               ))

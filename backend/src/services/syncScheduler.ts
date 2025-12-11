@@ -5,7 +5,7 @@ import { ingestionQueue } from './queueService.js';
 export const startSyncScheduler = () => {
 
     cron.schedule('0 */6 * * *', async () => {
-        console.log('⏰ [SCHEDULER] Queueing scheduled syncs...');
+        console.log('[SCHEDULER] Queueing scheduled syncs...');
 
         const tenants = await prisma.tenant.findMany({
             where: { accessToken: { not: null } },

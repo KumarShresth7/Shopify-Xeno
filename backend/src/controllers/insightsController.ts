@@ -2,6 +2,14 @@ import { Response } from 'express';
 import { TenantRequest } from '../middleware/tenantContext.js';
 import prisma from '../config/database.js';
 
+
+const getCustomerTier = (spent: number) => {
+    if (spent >= 100) return 'VIP';
+    if (spent >= 50) return 'High Value';
+    if (spent >= 10) return 'Regular';
+    return 'New';
+};
+
 export const getOverview = async (req: TenantRequest, res: Response) => {
     try {
         const tenantId = req.tenant.id;
@@ -63,6 +71,7 @@ export const getRevenueTrend = async (req: TenantRequest, res: Response) => {
             orderBy: { createdAt: 'asc' },
         });
 
+        // Group by YYYY-MM-DD
         const trendMap = new Map<string, { revenue: number; orders: number }>();
 
         orders.forEach((order) => {
@@ -74,6 +83,7 @@ export const getRevenueTrend = async (req: TenantRequest, res: Response) => {
             });
         });
 
+        // Convert Map to Array for the Chart
         const trend = Array.from(trendMap.entries()).map(([date, data]) => ({
             date,
             revenue: parseFloat(data.revenue.toFixed(2)),
@@ -105,13 +115,18 @@ export const getTopCustomers = async (req: TenantRequest, res: Response) => {
             },
         });
 
-        const topCustomers = customers.map((customer) => ({
-            id: customer.id.toString(),
-            name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'N/A',
-            email: customer.email || 'N/A',
-            totalSpent: parseFloat(Number(customer.totalSpent).toFixed(2)),
-            ordersCount: customer.ordersCount,
-        }));
+        const topCustomers = customers.map((customer) => {
+            const totalSpent = parseFloat(Number(customer.totalSpent).toFixed(2));
+            return {
+                id: customer.id.toString(),
+                name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Guest',
+                email: customer.email || 'N/A',
+                totalSpent,
+                ordersCount: customer.ordersCount,
+
+                tier: getCustomerTier(totalSpent),
+            };
+        });
 
         res.json({ success: true, data: topCustomers });
     } catch (error: any) {
@@ -169,7 +184,7 @@ export const getAbandonedCarts = async (req: TenantRequest, res: Response) => {
     try {
         const tenantId = req.tenant.id;
 
-        // 1. Fetch the Summary first
+        // 1. Fetch Summary
         const summary = await prisma.abandonedCart.aggregate({
             where: {
                 tenantId,
@@ -181,7 +196,7 @@ export const getAbandonedCarts = async (req: TenantRequest, res: Response) => {
             _sum: { totalPrice: true },
         });
 
-        // 2. Fetch the List (Separately to fix TS inference)
+        // 2. Fetch Recent Carts
         const rawCarts = await prisma.abandonedCart.findMany({
             where: { tenantId },
             orderBy: { abandonedAt: 'desc' },
@@ -197,7 +212,7 @@ export const getAbandonedCarts = async (req: TenantRequest, res: Response) => {
             }
         });
 
-        // 3. Map the data with safe access to the customer relation
+        // 3. Map Data
         const recentCarts = rawCarts.map((cart) => ({
             cartToken: cart.cartToken,
             customerName: cart.customer
@@ -336,15 +351,17 @@ export const getCustomerSegments = async (req: TenantRequest, res: Response) => 
             New: { count: 0, revenue: 0 },
         };
 
+        // Aggregation Logic matching the Tier helper
         customers.forEach((customer) => {
-            const spent = Number(customer.totalSpent);
-            if (spent >= 1000) {
+            const spent = Number(customer.totalSpent || 0);
+
+            if (spent >= 100) {
                 segments.VIP.count++;
                 segments.VIP.revenue += spent;
-            } else if (spent >= 500) {
+            } else if (spent >= 60) {
                 segments['High Value'].count++;
                 segments['High Value'].revenue += spent;
-            } else if (spent >= 100) {
+            } else if (spent >= 30) {
                 segments.Regular.count++;
                 segments.Regular.revenue += spent;
             } else {
@@ -369,3 +386,4 @@ export const getCustomerSegments = async (req: TenantRequest, res: Response) => 
         });
     }
 };
+

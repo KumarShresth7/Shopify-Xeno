@@ -78,7 +78,7 @@ export default function ProductsPage() {
                       {product.vendor}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                      ${Number(product.price).toFixed(2)}
+                      ₹{Number(product.price).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {new Date(product.createdAt).toLocaleDateString()}

@@ -99,7 +99,7 @@ export default function OrdersPage() {
                       {getStatusBadge(order.fulfillmentStatus || 'unfulfilled')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-foreground">
-                      ${Number(order.totalPrice).toFixed(2)}
+                      ₹{Number(order.totalPrice).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {new Date(order.createdAt).toLocaleDateString()}
