@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import prisma from '../config/database.js';
-import { ingestionQueue } from './queueService.js'; // Import the queue
+import { ingestionQueue } from './queueService.js';
 
 export const startSyncScheduler = () => {
 

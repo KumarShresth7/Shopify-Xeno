@@ -47,7 +47,7 @@ export const getRevenueTrend = async (req: TenantRequest, res: Response) => {
                 lte: new Date(endDate as string),
             };
         } else {
-            // Default to last 30 days
+
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             where.createdAt = {

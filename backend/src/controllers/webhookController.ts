@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import crypto from 'crypto';
 import prisma from '../config/database.js';
 import { ingestionQueue } from '../services/queueService.js';
 import dotenv from 'dotenv';
@@ -10,7 +9,6 @@ export const handleCartAbandoned = async (req: Request, res: Response) => {
     try {
         const shopDomain = req.get('X-Shopify-Shop-Domain');
 
-        console.log(`⚠️ [Dev Mode] Skipping HMAC check for Abandoned Cart.`);
         if (!shopDomain) {
             return res.status(400).json({ message: 'Missing Shop Domain Header' });
         }
@@ -46,8 +44,6 @@ export const handleCheckoutStarted = async (req: Request, res: Response) => {
     try {
         const shopDomain = req.get('X-Shopify-Shop-Domain');
 
-        console.log(`⚠️ [Dev Mode] Skipping HMAC check for Checkout Started.`);
-
         if (!shopDomain) {
             return res.status(400).json({ message: 'Missing Shop Domain Header' });
         }
@@ -76,8 +72,6 @@ export const handleCheckoutStarted = async (req: Request, res: Response) => {
 export const handleOrderCreated = async (req: Request, res: Response) => {
     try {
         const shopDomain = req.get('X-Shopify-Shop-Domain');
-
-        console.log(`⚠️ [Dev Mode] Skipping HMAC check for Order Created.`);
 
         if (!shopDomain) {
             return res.status(400).json({ message: 'Missing Shop Domain Header' });

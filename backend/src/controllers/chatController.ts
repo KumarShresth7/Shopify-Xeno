@@ -94,7 +94,6 @@ export const chatWithAnalyst = async (req: TenantRequest, res: Response) => {
             typeof v === 'bigint' ? v.toString() : v
         ));
 
-
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const systemPrompt = `

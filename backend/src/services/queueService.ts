@@ -79,7 +79,7 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
                             email: order.customer.email,
                             firstName: order.customer.first_name,
                             lastName: order.customer.last_name,
-                            ordersCount: order.customer.orders_count || 1, // Fallback if missing
+                            ordersCount: order.customer.orders_count || 1,
                             totalSpent: parseFloat(order.customer.total_spent || '0'),
                             updatedAt: new Date(order.customer.updated_at),
                         },

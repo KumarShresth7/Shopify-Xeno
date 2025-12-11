@@ -34,15 +34,10 @@ app.use(errorHandler);
 const startServer = () => {
     app.listen(PORT, () => {
         console.log('');
-        console.log('🚀 ==============================================');
-        console.log(`🚀  Xeno Shopify Backend Server Started`);
-        console.log('🚀 ==============================================');
-        console.log(`📊  Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`🌐  Server URL: http://localhost:${PORT}`);
-        console.log(`🔗  API Endpoint: http://localhost:${PORT}/api`);
-        console.log(`💚  Health Check: http://localhost:${PORT}/health`);
-        console.log('🚀 ==============================================');
-        console.log('');
+        console.log(`Xeno Shopify Backend Server Started`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`Server URL: http://localhost:${PORT}`);
+        console.log('')
 
         startSyncScheduler();
     });
