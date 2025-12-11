@@ -168,7 +168,7 @@ export default function AnalyticsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      ${Number(cart.totalPrice).toFixed(2)}
+                      ₹{Number(cart.totalPrice).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {new Date(cart.abandonedAt).toLocaleDateString()}
@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-foreground">
-                      ${Number(checkout.totalPrice).toFixed(2)}
+                      ₹{Number(checkout.totalPrice).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {checkout.completed ? (
