@@ -54,3 +54,22 @@ export const getShopifyStatus = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ success: false, message: 'Error fetching status', error: error.message });
     }
 };
+
+export const getProducts = async (req: AuthRequest, res: Response) => {
+    try {
+        const tenantId = req.user!.tenantId;
+
+        const products = await prisma.product.findMany({
+            where: { tenantId },
+            orderBy: { createdAt: 'desc' }, // Newest products first
+        });
+
+        res.json({
+            success: true,
+            data: products,
+        });
+    } catch (error: any) {
+        console.error('Get products error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching products', error: error.message });
+    }
+};

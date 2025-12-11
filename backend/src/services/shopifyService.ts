@@ -59,8 +59,6 @@ export class ShopifyService {
                     email: customer.email,
                     firstName: customer.first_name,
                     lastName: customer.last_name,
-                    ordersCount: customer.orders_count || 0,
-                    totalSpent: parseFloat(customer.total_spent || '0'),
                     updatedAt: new Date(customer.updated_at),
                 },
                 create: {
@@ -69,8 +67,8 @@ export class ShopifyService {
                     email: customer.email,
                     firstName: customer.first_name,
                     lastName: customer.last_name,
-                    ordersCount: customer.orders_count || 0,
-                    totalSpent: parseFloat(customer.total_spent || '0'),
+                    ordersCount: 0,
+                    totalSpent: 0,
                     createdAt: new Date(customer.created_at),
                     updatedAt: new Date(customer.updated_at),
                 },
@@ -98,6 +96,7 @@ export class ShopifyService {
                     vendor: product.vendor,
                     productType: product.product_type,
                     price: variant ? parseFloat(variant.price) : 0,
+                    inventory: variant ? variant.inventory_quantity : 0,
                     updatedAt: new Date(product.updated_at),
                 },
                 create: {
@@ -107,6 +106,7 @@ export class ShopifyService {
                     vendor: product.vendor,
                     productType: product.product_type,
                     price: variant ? parseFloat(variant.price) : 0,
+                    inventory: variant ? variant.inventory_quantity : 0,
                     createdAt: new Date(product.created_at),
                     updatedAt: new Date(product.updated_at),
                 },
@@ -121,6 +121,17 @@ export class ShopifyService {
         const orders = data.orders || [];
 
         for (const order of orders) {
+            // 1. Link Order to Checkout
+            if (order.checkout_id) {
+                try {
+                    await prisma.checkout.updateMany({
+                        where: { id: BigInt(order.checkout_id), tenantId },
+                        data: { completed: true, updatedAt: new Date() }
+                    });
+                } catch (e) { /* ignore */ }
+            }
+
+            // 2. Save Order
             await prisma.order.upsert({
                 where: {
                     id_tenantId: {
@@ -153,14 +164,10 @@ export class ShopifyService {
                 },
             });
 
-
+            // 3. Save Line Items
             await prisma.orderLineItem.deleteMany({
-                where: {
-                    orderId: BigInt(order.id),
-                    tenantId,
-                },
+                where: { orderId: BigInt(order.id), tenantId },
             });
-
 
             if (order.line_items && order.line_items.length > 0) {
                 for (const item of order.line_items) {
@@ -177,16 +184,37 @@ export class ShopifyService {
                 }
             }
         }
-
         return orders.length;
     }
-
 
     async syncAbandonedCheckouts(tenantId: number) {
         const data = await this.fetchAbandonedCheckouts();
         const checkouts = data.checkouts || [];
 
         for (const checkout of checkouts) {
+            // Ensure Customer Exists First
+            if (checkout.customer) {
+                await prisma.customer.upsert({
+                    where: { id_tenantId: { id: BigInt(checkout.customer.id), tenantId } },
+                    update: {
+                        email: checkout.customer.email,
+                        firstName: checkout.customer.first_name,
+                        lastName: checkout.customer.last_name,
+                        updatedAt: new Date(checkout.customer.updated_at || new Date()),
+                    },
+                    create: {
+                        id: BigInt(checkout.customer.id),
+                        tenantId,
+                        email: checkout.customer.email,
+                        firstName: checkout.customer.first_name,
+                        lastName: checkout.customer.last_name,
+                        ordersCount: 0,
+                        totalSpent: 0,
+                        createdAt: new Date(checkout.customer.created_at || new Date()),
+                        updatedAt: new Date(checkout.customer.updated_at || new Date()),
+                    },
+                });
+            }
 
             await prisma.abandonedCart.upsert({
                 where: {
@@ -213,46 +241,87 @@ export class ShopifyService {
                 },
             });
         }
-
         return checkouts.length;
     }
 
+    // --- RECALCULATION HELPERS ---
+
+    private async recalculateCustomerTotals(tenantId: number) {
+        console.log(`💰 Recalculating customer totals for tenant ${tenantId}...`);
+
+        const aggregations = await prisma.order.groupBy({
+            by: ['customerId'],
+            where: { tenantId, customerId: { not: null } },
+            _sum: { totalPrice: true },
+            _count: { id: true }
+        });
+
+        for (const agg of aggregations) {
+            if (!agg.customerId) continue;
+
+            await prisma.customer.update({
+                where: { id_tenantId: { id: agg.customerId, tenantId } },
+                data: {
+                    totalSpent: agg._sum.totalPrice || 0,
+                    ordersCount: agg._count.id
+                }
+            });
+        }
+        console.log(`✅ Updated ${aggregations.length} customers with correct totals.`);
+    }
+
+    private async calculateGlobalStats(tenantId: number) {
+        const [ordersAgg, customersCount] = await Promise.all([
+            prisma.order.aggregate({
+                where: { tenantId },
+                _sum: { totalPrice: true },
+                _count: { id: true }
+            }),
+            prisma.customer.count({ where: { tenantId } })
+        ]);
+
+        const totalRevenue = parseFloat(ordersAgg._sum.totalPrice?.toString() || '0');
+        const totalOrders = ordersAgg._count.id;
+        const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+        return {
+            totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+            totalOrders,
+            totalCustomers: customersCount,
+            averageOrderValue: parseFloat(averageOrderValue.toFixed(2))
+        };
+    }
+
     async syncAllData(tenantId: number) {
-        console.log(`Starting sync for tenant ${tenantId}...`);
+        console.log(`🔄 Starting sync for tenant ${tenantId}...`);
         const results = {
             customers: 0,
             products: 0,
             orders: 0,
             abandonedCarts: 0,
+            stats: {}
         };
 
-        try {
-            results.customers = await this.syncCustomers(tenantId);
-            console.log(`Synced ${results.customers} customers`);
-        } catch (error) {
-            console.error('Error syncing customers:', error);
-        }
+        try { results.customers = await this.syncCustomers(tenantId); }
+        catch (e) { console.error('Error syncing customers:', e); }
 
-        try {
-            results.products = await this.syncProducts(tenantId);
-            console.log(`Synced ${results.products} products`);
-        } catch (error) {
-            console.error('Error syncing products:', error);
-        }
+        try { results.products = await this.syncProducts(tenantId); }
+        catch (e) { console.error('Error syncing products:', e); }
 
-        try {
-            results.orders = await this.syncOrders(tenantId);
-            console.log(`Synced ${results.orders} orders`);
-        } catch (error) {
-            console.error('Error syncing orders:', error);
-        }
+        try { results.orders = await this.syncOrders(tenantId); }
+        catch (e) { console.error('Error syncing orders:', e); }
 
+        try { results.abandonedCarts = await this.syncAbandonedCheckouts(tenantId); }
+        catch (e) { console.error('Error syncing abandoned checkouts:', e); }
 
+        // --- FINAL STEPS ---
         try {
-            results.abandonedCarts = await this.syncAbandonedCheckouts(tenantId);
-            console.log(`Synced ${results.abandonedCarts} abandoned checkouts`);
+            await this.recalculateCustomerTotals(tenantId);
+            const stats = await this.calculateGlobalStats(tenantId);
+            results.stats = stats;
+            console.log(`📊 Sync Stats: Revenue=$${stats.totalRevenue}, Orders=${stats.totalOrders}, Customers=${stats.totalCustomers}, AOV=$${stats.averageOrderValue}`);
         } catch (error) {
-            console.error('Error syncing abandoned checkouts:', error);
+            console.error('❌ Error calculating final stats:', error);
         }
 
         return results;

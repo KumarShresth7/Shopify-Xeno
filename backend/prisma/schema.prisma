@@ -67,6 +67,7 @@ model Product {
   vendor      String?
   productType String?  @map("product_type")
   price       Decimal  @default(0) @db.Decimal(10, 2)
+  inventory   Int      @default(0)
   createdAt   DateTime @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

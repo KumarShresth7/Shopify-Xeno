@@ -1,42 +1,52 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import useSWR from 'swr';
 import apiClient from '@/lib/api';
-import { Package, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Search, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+
+const fetchProducts = async () => {
+  const res = await apiClient.get('/tenant/products'); // Ensure this endpoint returns the new 'inventory' field
+  return res.data.data;
+};
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [pagination, setPagination] = useState<any>({});
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const { data: products, error, isLoading } = useSWR('products', fetchProducts);
+  const [searchTerm, setSearchTerm] = React.useState('');
 
-  useEffect(() => {
-    fetchProducts();
-  }, [currentPage]);
+  if (isLoading) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <div className="w-12 h-12 rounded-full border-4 border-muted border-t-primary animate-spin"></div>
+      </div>
+    );
+  }
 
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.get(`/shopify/products?page=${currentPage}&limit=15`);
-      setProducts(response.data.products);
-      setPagination(response.data.pagination);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (error) {
+    return <div className="p-8 text-red-500">Failed to load products.</div>;
+  }
+
+  const filteredProducts = products?.filter((p: any) =>
+    p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.vendor?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Products</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Manage your product catalog.</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Products</h1>
+          <p className="text-muted-foreground mt-1">Manage your store inventory.</p>
         </div>
-        <div className="bg-card px-4 py-2 rounded-lg border border-border shadow-sm flex items-center gap-2">
-          <Package size={16} className="text-primary" />
-          <span className="text-sm font-medium text-foreground">Total: {pagination.total || 0}</span>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input 
+            type="text" 
+            placeholder="Search products..." 
+            className="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
@@ -45,81 +55,73 @@ export default function ProductsPage() {
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Product Name</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Product</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vendor</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Price</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Added</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Inventory</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Price</th>
               </tr>
             </thead>
-            <tbody className="bg-card divide-y divide-border">
-              {loading ? (
-                // Skeleton Loader
-                [...Array(5)].map((_, i) => (
-                  <tr key={i}>
-                    {[...Array(5)].map((_, j) => (
-                      <td key={j} className="px-6 py-4"><div className="h-4 bg-muted rounded animate-pulse w-full"></div></td>
-                    ))}
-                  </tr>
-                ))
-              ) : products.length > 0 ? (
-                products.map((product) => (
-                  <tr key={product.id.toString()} className="hover:bg-muted/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-foreground">{product.title}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground border border-border">
-                        <Tag size={12} />
-                        {product.productType || 'Uncategorized'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {product.vendor}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                      ₹{Number(product.price).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                      {new Date(product.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))
-              ) : (
+            <tbody className="divide-y divide-border bg-card">
+              {filteredProducts?.map((product: any) => (
+                <tr key={product.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-secondary text-secondary-foreground">
+                        <Package size={20} />
+                      </div>
+                      <span className="font-medium text-foreground">{product.title}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    {product.vendor || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <InventoryStatus count={product.inventory} />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-foreground">
+                    {product.inventory}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-foreground">
+                    ${Number(product.price).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+              
+              {filteredProducts?.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center text-muted-foreground">
-                    <p>No products found in the catalog.</p>
+                  <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                    No products found matching "{searchTerm}"
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-
-        {pagination.totalPages > 1 && (
-          <div className="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Page <span className="font-medium text-foreground">{currentPage}</span> of {pagination.totalPages}
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="p-2 border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-foreground"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
-                disabled={currentPage === pagination.totalPages}
-                className="p-2 border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-foreground"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 }
+
+// Helper Component for Inventory Status Badges
+const InventoryStatus = ({ count }: { count: number }) => {
+  if (count <= 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+        <XCircle size={12} /> Out of Stock
+      </span>
+    );
+  }
+  if (count < 10) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+        <AlertCircle size={12} /> Low Stock
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+      <CheckCircle2 size={12} /> In Stock
+    </span>
+  );
+};

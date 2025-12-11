@@ -15,6 +15,10 @@ app.use(
         credentials: true,
     })
 );
+
+(BigInt.prototype as any).toJSON = function () {
+    return this.toString();
+};
 app.use(express.json({
     verify: (req: any, res, buf) => {
         req.rawBody = buf;

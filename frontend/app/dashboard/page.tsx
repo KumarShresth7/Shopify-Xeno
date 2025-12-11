@@ -17,7 +17,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
             <span className="text-muted-foreground capitalize">{entry.name}:</span>
             <span className="font-medium text-popover-foreground">
-              {entry.name === 'revenue' ? '$' : ''}{entry.value}
+              {entry.name === 'revenue' ? '₹' : ''}{entry.value}
             </span>
           </div>
         ))}
@@ -63,10 +63,10 @@ export default function DashboardPage() {
   }
 
   const metrics = [
-    { title: 'Total Revenue', value: `$${overview?.totalRevenue?.toFixed(2) || 0}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-500/10', trend: '+12.5%' },
+    { title: 'Total Revenue', value: `₹${overview?.totalRevenue?.toFixed(2) || 0}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-500/10', trend: '+12.5%' },
     { title: 'Total Orders', value: overview?.totalOrders || 0, icon: ShoppingCart, color: 'text-blue-600', bg: 'bg-blue-500/10', trend: '+4.2%' },
     { title: 'Total Customers', value: overview?.totalCustomers || 0, icon: Users, color: 'text-purple-600', bg: 'bg-purple-500/10', trend: '+8.1%' },
-    { title: 'Avg Order Value', value: `$${overview?.averageOrderValue?.toFixed(2) || 0}`, icon: Package, color: 'text-orange-600', bg: 'bg-orange-500/10', trend: '-2.4%' },
+    { title: 'Avg Order Value', value: `₹${overview?.averageOrderValue?.toFixed(2) || 0}`, icon: Package, color: 'text-orange-600', bg: 'bg-orange-500/10', trend: '-2.4%' },
   ];
 
   return (
@@ -135,7 +135,7 @@ export default function DashboardPage() {
                   axisLine={false} 
                   tickLine={false} 
                   tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12}} 
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => `₹${value}`}
                 />
                 <YAxis yAxisId="right" orientation="right" hide />
                 <Tooltip content={<CustomTooltip />} />
