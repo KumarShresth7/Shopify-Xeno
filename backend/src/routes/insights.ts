@@ -18,8 +18,8 @@ router.use(authenticate);
 router.use(tenantContext);
 
 
-router.get('/overview', getOverview);
-router.get('/revenue-trend', getRevenueTrend);
+router.get('/overview', cacheMiddleware(300), getOverview);
+router.get('/revenue-trend', cacheMiddleware(600), getRevenueTrend);
 router.get('/top-customers', getTopCustomers);
 router.get('/orders', getOrdersByDate);
 

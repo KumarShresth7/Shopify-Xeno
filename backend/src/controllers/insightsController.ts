@@ -47,7 +47,6 @@ export const getRevenueTrend = async (req: TenantRequest, res: Response) => {
                 lte: new Date(endDate as string),
             };
         } else {
-
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             where.createdAt = {
@@ -166,34 +165,48 @@ export const getOrdersByDate = async (req: TenantRequest, res: Response) => {
     }
 };
 
-
 export const getAbandonedCarts = async (req: TenantRequest, res: Response) => {
     try {
         const tenantId = req.tenant.id;
 
-        const [summary, recentCarts] = await Promise.all([
-            prisma.abandonedCart.aggregate({
-                where: {
-                    tenantId,
-                    abandonedAt: {
-                        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-                    },
+        // 1. Fetch the Summary first
+        const summary = await prisma.abandonedCart.aggregate({
+            where: {
+                tenantId,
+                abandonedAt: {
+                    gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
                 },
-                _count: true,
-                _sum: { totalPrice: true },
-            }),
-            prisma.abandonedCart.findMany({
-                where: { tenantId },
-                orderBy: { abandonedAt: 'desc' },
-                take: 10,
-                select: {
-                    cartToken: true,
-                    customerEmail: true,
-                    totalPrice: true,
-                    abandonedAt: true,
-                },
-            }),
-        ]);
+            },
+            _count: true,
+            _sum: { totalPrice: true },
+        });
+
+        // 2. Fetch the List (Separately to fix TS inference)
+        const rawCarts = await prisma.abandonedCart.findMany({
+            where: { tenantId },
+            orderBy: { abandonedAt: 'desc' },
+            take: 10,
+            include: {
+                customer: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        // 3. Map the data with safe access to the customer relation
+        const recentCarts = rawCarts.map((cart) => ({
+            cartToken: cart.cartToken,
+            customerName: cart.customer
+                ? `${cart.customer.firstName || ''} ${cart.customer.lastName || ''}`.trim()
+                : (cart.customerEmail || 'Guest'),
+            customerEmail: cart.customer?.email || cart.customerEmail,
+            totalPrice: Number(cart.totalPrice || 0),
+            abandonedAt: cart.abandonedAt,
+        }));
 
         res.json({
             success: true,
@@ -212,7 +225,6 @@ export const getAbandonedCarts = async (req: TenantRequest, res: Response) => {
     }
 };
 
-
 export const getConversionMetrics = async (req: TenantRequest, res: Response) => {
     try {
         const tenantId = req.tenant.id;
@@ -225,7 +237,6 @@ export const getConversionMetrics = async (req: TenantRequest, res: Response) =>
                 where: { tenantId },
                 _avg: { totalPrice: true },
             }),
-
             prisma.checkout.findMany({
                 where: { tenantId },
                 orderBy: { createdAt: 'desc' },
@@ -242,7 +253,6 @@ export const getConversionMetrics = async (req: TenantRequest, res: Response) =>
 
         const conversionRate =
             checkoutsCount > 0 ? ((completedCheckouts / checkoutsCount) * 100).toFixed(2) : '0';
-
 
         const serialize = (obj: any) => JSON.parse(JSON.stringify(obj, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
@@ -267,7 +277,6 @@ export const getConversionMetrics = async (req: TenantRequest, res: Response) =>
         });
     }
 };
-
 
 export const getProductPerformance = async (req: TenantRequest, res: Response) => {
     try {
@@ -310,7 +319,6 @@ export const getProductPerformance = async (req: TenantRequest, res: Response) =
         });
     }
 };
-
 
 export const getCustomerSegments = async (req: TenantRequest, res: Response) => {
     try {

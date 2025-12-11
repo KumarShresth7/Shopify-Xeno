@@ -132,7 +132,7 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Abandoned Checkouts Table (Existing) */}
+        {/* Abandoned Carts Table (Updated) */}
         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           <div className="p-6 border-b border-border bg-muted/20">
             <h3 className="text-lg font-bold text-foreground">Abandoned Carts</h3>
@@ -152,8 +152,19 @@ export default function AnalyticsPage() {
                   <tr key={index} className="hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <User size={16} className="text-muted-foreground" />
-                        <span className="text-sm font-medium text-foreground">{cart.customerEmail || 'Guest'}</span>
+                        <div className="p-2 rounded-full bg-muted/50">
+                          <User size={16} className="text-muted-foreground" />
+                        </div>
+                        <div className="flex flex-col">
+                          {/* Display Name clearly */}
+                          <span className="text-sm font-medium text-foreground">
+                            {cart.customerName || 'Guest'}
+                          </span>
+                          {/* Display Email as secondary info */}
+                          {cart.customerEmail && (
+                            <span className="text-xs text-muted-foreground">{cart.customerEmail}</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600 dark:text-emerald-400">
@@ -164,12 +175,19 @@ export default function AnalyticsPage() {
                     </td>
                   </tr>
                 ))}
+                {(!data?.carts?.recentCarts || data.carts.recentCarts.length === 0) && (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-12 text-center text-muted-foreground">
+                      No abandoned carts found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* NEW: Live Checkouts Feed */}
+        {/* Live Checkouts Feed */}
         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           <div className="p-6 border-b border-border bg-muted/20">
             <h3 className="text-lg font-bold text-foreground">Live Checkouts Feed</h3>

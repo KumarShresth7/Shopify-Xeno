@@ -51,6 +51,8 @@ model Customer {
 
   tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orders Order[]
+  
+  abandonedCarts AbandonedCart[]
 
   @@unique([id, tenantId])
   @@index([tenantId])
@@ -121,7 +123,10 @@ model AbandonedCart {
   id            Int      @id @default(autoincrement())
   tenantId      Int      @map("tenant_id")
   cartToken     String   @map("cart_token")
+  
   customerId    BigInt?  @map("customer_id")
+  customer      Customer? @relation(fields: [customerId, tenantId], references: [id, tenantId])
+  
   customerEmail String?  @map("customer_email")
   totalPrice    Decimal? @db.Decimal(10, 2) @map("total_price")
   abandonedAt   DateTime @map("abandoned_at")
