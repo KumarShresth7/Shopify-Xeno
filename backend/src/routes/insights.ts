@@ -18,15 +18,15 @@ router.use(authenticate);
 router.use(tenantContext);
 
 
-router.get('/overview', cacheMiddleware(60 * 60), getOverview);
-router.get('/revenue-trend', cacheMiddleware(60 * 60), getRevenueTrend);
-router.get('/top-customers', cacheMiddleware(60 * 60), getTopCustomers);
-router.get('/orders', cacheMiddleware(60 * 60), getOrdersByDate);
+router.get('/overview', getOverview);
+router.get('/revenue-trend', getRevenueTrend);
+router.get('/top-customers', getTopCustomers);
+router.get('/orders', getOrdersByDate);
 
 
-router.get('/abandoned-carts', cacheMiddleware(60 * 60), getAbandonedCarts);
-router.get('/conversion-metrics', cacheMiddleware(60 * 60), getConversionMetrics);
-router.get('/product-performance', cacheMiddleware(60 * 60), getProductPerformance);
-router.get('/customer-segments', cacheMiddleware(60 * 60), getCustomerSegments);
+router.get('/abandoned-carts', getAbandonedCarts);
+router.get('/conversion-metrics', getConversionMetrics);
+router.get('/product-performance', getProductPerformance);
+router.get('/customer-segments', getCustomerSegments);
 
 export default router;
