@@ -1,31 +1,27 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import apiClient from '@/lib/api';
+import useSWR from 'swr';
 import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
 
+const fetchOrders = async (url: string) => {
+  const response = await apiClient.get(url);
+  return response.data;
+};
+
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [pagination, setPagination] = useState<any>({});
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
-    fetchOrders();
-  }, [currentPage]);
+  // SWR Key changes when page changes, triggering a refetch
+  const { data, error, isLoading } = useSWR(
+    `/shopify/orders?page=${currentPage}&limit=15`,
+    fetchOrders,
+    { keepPreviousData: true } // Keeps the table populated while next page loads
+  );
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.get(`/shopify/orders?page=${currentPage}&limit=15`);
-      setOrders(response.data.orders);
-      setPagination(response.data.pagination);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const orders = data?.orders || [];
+  const pagination = data?.pagination || {};
 
   const getStatusBadge = (status: string) => {
     const styles: any = {
@@ -68,7 +64,7 @@ export default function OrdersPage() {
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
-              {loading ? (
+              {isLoading && orders.length === 0 ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i}>
                     {[...Array(6)].map((_, j) => (
@@ -77,7 +73,7 @@ export default function OrdersPage() {
                   </tr>
                 ))
               ) : orders.length > 0 ? (
-                orders.map((order) => (
+                orders.map((order: any) => (
                   <tr key={order.id.toString()} className="hover:bg-muted/50 transition-colors group">
                     <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">
                       #{order.orderNumber}

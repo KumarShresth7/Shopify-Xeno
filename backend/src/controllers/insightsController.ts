@@ -71,7 +71,6 @@ export const getRevenueTrend = async (req: TenantRequest, res: Response) => {
             orderBy: { createdAt: 'asc' },
         });
 
-        // Group by YYYY-MM-DD
         const trendMap = new Map<string, { revenue: number; orders: number }>();
 
         orders.forEach((order) => {
@@ -83,7 +82,6 @@ export const getRevenueTrend = async (req: TenantRequest, res: Response) => {
             });
         });
 
-        // Convert Map to Array for the Chart
         const trend = Array.from(trendMap.entries()).map(([date, data]) => ({
             date,
             revenue: parseFloat(data.revenue.toFixed(2)),

@@ -1,34 +1,44 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import apiClient from '@/lib/api';
+import useSWR from 'swr';
 import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 
+const fetchCustomers = async (url: string) => {
+  const response = await apiClient.get(url);
+  return response.data;
+};
+
+
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [pagination, setPagination] = useState<any>({});
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchCustomers();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [currentPage, search]);
+  const debouncedSearch = useDebounce(search, 500);
 
-  const fetchCustomers = async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.get(`/shopify/customers?page=${currentPage}&limit=10&search=${search}`);
-      setCustomers(response.data.customers);
-      setPagination(response.data.pagination);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+  const { data, isLoading } = useSWR(
+    `/shopify/customers?page=${currentPage}&limit=10&search=${debouncedSearch}`,
+    fetchCustomers,
+    { keepPreviousData: true }
+  );
+
+  const customers = data?.customers || [];
+  const pagination = data?.pagination || {};
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setCurrentPage(1);
   };
 
   return (
@@ -45,7 +55,7 @@ export default function CustomersPage() {
               type="text"
               placeholder="Search customers..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              onChange={handleSearchChange}
               className="w-full pl-10 pr-4 py-2 bg-background border border-input rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-input transition-all"
             />
           </div>
@@ -68,7 +78,7 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
-              {loading ? (
+              {isLoading && customers.length === 0 ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i}>
                     {[...Array(5)].map((_, j) => (
@@ -77,7 +87,7 @@ export default function CustomersPage() {
                   </tr>
                 ))
               ) : customers.length > 0 ? (
-                customers.map((customer) => (
+                customers.map((customer: any) => (
                   <tr key={customer.id.toString()} className="hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">

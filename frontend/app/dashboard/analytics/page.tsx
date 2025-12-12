@@ -8,7 +8,6 @@ import {
 } from 'recharts';
 import { TrendingUp, ShoppingCart, AlertCircle, RefreshCw, User, CheckCircle2, Clock } from 'lucide-react';
 
-// --- 1. Colors & Utils ---
 const SEGMENT_COLORS: Record<string, string> = {
   'VIP': '#f59e0b',        // Amber
   'High Value': '#3b82f6', // Blue
@@ -18,10 +17,10 @@ const SEGMENT_COLORS: Record<string, string> = {
 
 const DEFAULT_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444'];
 
-// --- 2. Custom Tooltip Component (Fixes "Not Showing Values") ---
+
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload; // Access the full data object
+    const data = payload[0].payload; 
     return (
       <div className="bg-popover p-3 border border-border shadow-xl rounded-xl min-w-[150px]">
         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border">

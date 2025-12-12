@@ -1,11 +1,26 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import apiClient from '@/lib/api';
+import useSWR from 'swr';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 import { Users, ShoppingCart, DollarSign, Package, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+
+// Fetcher function that gets all data in parallel
+const fetchDashboardData = async () => {
+  const [overviewRes, trendRes, customersRes] = await Promise.all([
+    apiClient.get('/insights/overview'),
+    apiClient.get('/insights/revenue-trend'),
+    apiClient.get('/insights/top-customers?limit=5'),
+  ]);
+  return {
+    overview: overviewRes.data.data,
+    revenueTrend: trendRes.data.data,
+    topCustomers: customersRes.data.data,
+  };
+};
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -28,39 +43,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function DashboardPage() {
-  const [overview, setOverview] = useState<any>(null);
-  const [revenueTrend, setRevenueTrend] = useState<any[]>([]);
-  const [topCustomers, setTopCustomers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, error, isLoading } = useSWR('dashboard-overview', fetchDashboardData);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const [overviewRes, trendRes, customersRes] = await Promise.all([
-        apiClient.get('/insights/overview'),
-        apiClient.get('/insights/revenue-trend'),
-        apiClient.get('/insights/top-customers?limit=5'),
-      ]);
-      setOverview(overviewRes.data.data);
-      setRevenueTrend(trendRes.data.data);
-      setTopCustomers(customersRes.data.data);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <div className="w-12 h-12 rounded-full border-4 border-muted border-t-primary animate-spin"></div>
       </div>
     );
   }
+
+  // Safely access data
+  const { overview, revenueTrend, topCustomers } = data || {};
 
   const metrics = [
     { title: 'Total Revenue', value: `₹${overview?.totalRevenue?.toFixed(2) || 0}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-500/10', trend: '+12.5%' },
@@ -164,8 +158,8 @@ export default function DashboardPage() {
         <div className="bg-card rounded-xl border border-border shadow-sm p-6">
           <h2 className="text-lg font-bold text-foreground mb-6">Top Spenders</h2>
           <div className="space-y-6">
-            {topCustomers.length > 0 ? (
-              topCustomers.map((customer, index) => (
+            {topCustomers && topCustomers.length > 0 ? (
+              topCustomers.map((customer: any, index: number) => (
                 <div key={index} className="flex items-center justify-between group">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -179,11 +173,11 @@ export default function DashboardPage() {
                   <div className="text-right">
                     <p className="text-sm font-bold text-foreground">₹{customer.totalSpent.toFixed(2)}</p>
                     <p className={`text-xs font-medium ${
-  customer.tier === 'VIP' ? 'text-emerald-600' : 
-  customer.tier === 'High Value' ? 'text-blue-600' : 'text-slate-500'
-}`}>
-  {customer.tier}
-</p>
+                      customer.tier === 'VIP' ? 'text-emerald-600' : 
+                      customer.tier === 'High Value' ? 'text-blue-600' : 'text-slate-500'
+                    }`}>
+                      {customer.tier}
+                    </p>
                   </div>
                 </div>
               ))

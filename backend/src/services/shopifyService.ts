@@ -121,7 +121,6 @@ export class ShopifyService {
         const orders = data.orders || [];
 
         for (const order of orders) {
-            // 1. Link Order to Checkout
             if (order.checkout_id) {
                 try {
                     await prisma.checkout.updateMany({
@@ -131,7 +130,6 @@ export class ShopifyService {
                 } catch (e) { /* ignore */ }
             }
 
-            // 2. Save Order
             await prisma.order.upsert({
                 where: {
                     id_tenantId: {
@@ -192,7 +190,7 @@ export class ShopifyService {
         const checkouts = data.checkouts || [];
 
         for (const checkout of checkouts) {
-            // Ensure Customer Exists First
+
             if (checkout.customer) {
                 await prisma.customer.upsert({
                     where: { id_tenantId: { id: BigInt(checkout.customer.id), tenantId } },
@@ -244,8 +242,6 @@ export class ShopifyService {
         return checkouts.length;
     }
 
-    // --- RECALCULATION HELPERS ---
-
     private async recalculateCustomerTotals(tenantId: number) {
         console.log(`💰 Recalculating customer totals for tenant ${tenantId}...`);
 
@@ -293,7 +289,7 @@ export class ShopifyService {
     }
 
     async syncAllData(tenantId: number) {
-        console.log(`🔄 Starting sync for tenant ${tenantId}...`);
+        console.log(`Starting sync for tenant ${tenantId}...`);
         const results = {
             customers: 0,
             products: 0,
@@ -314,14 +310,13 @@ export class ShopifyService {
         try { results.abandonedCarts = await this.syncAbandonedCheckouts(tenantId); }
         catch (e) { console.error('Error syncing abandoned checkouts:', e); }
 
-        // --- FINAL STEPS ---
         try {
             await this.recalculateCustomerTotals(tenantId);
             const stats = await this.calculateGlobalStats(tenantId);
             results.stats = stats;
-            console.log(`📊 Sync Stats: Revenue=$${stats.totalRevenue}, Orders=${stats.totalOrders}, Customers=${stats.totalCustomers}, AOV=$${stats.averageOrderValue}`);
+            console.log(`Sync Stats: Revenue=$${stats.totalRevenue}, Orders=${stats.totalOrders}, Customers=${stats.totalCustomers}, AOV=$${stats.averageOrderValue}`);
         } catch (error) {
-            console.error('❌ Error calculating final stats:', error);
+            console.error('Error calculating final stats:', error);
         }
 
         return results;

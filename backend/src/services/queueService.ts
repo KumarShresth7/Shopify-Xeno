@@ -8,7 +8,7 @@ export const ingestionQueue = new Queue('ingestion-queue', {
 });
 
 const worker = new Worker('ingestion-queue', async (job: Job) => {
-    console.log(`👷 [Worker] Picking up job: ${job.name} (Type: ${job.data.type || 'sync'})`);
+    console.log(`[Worker] Picking up job: ${job.name} (Type: ${job.data.type || 'sync'})`);
 
     try {
 
@@ -16,7 +16,7 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
             const { tenantId, shopDomain, accessToken } = job.data;
             const service = new ShopifyService(shopDomain, accessToken);
             await service.syncAllData(tenantId);
-            console.log(`✅ [Worker] Sync completed for tenant ${tenantId}`);
+            console.log(`[Worker] Sync completed for tenant ${tenantId}`);
         }
 
 
@@ -25,7 +25,7 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
 
 
             if (type === 'cart-abandoned') {
-                console.log(`🛒 [DB] Upserting Abandoned Cart: ${payload.token}`);
+                console.log(`[DB] Upserting Abandoned Cart: ${payload.token}`);
                 await prisma.abandonedCart.upsert({
                     where: { cartToken_tenantId: { cartToken: payload.token, tenantId } },
                     update: {
@@ -47,7 +47,7 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
 
 
             else if (type === 'checkout-started') {
-                console.log(`💳 [DB] Upserting Checkout: ${payload.id}`);
+                console.log(`[DB] Upserting Checkout: ${payload.id}`);
                 await prisma.checkout.upsert({
                     where: { id_tenantId: { id: BigInt(payload.id), tenantId } },
                     update: {
@@ -71,7 +71,7 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
 
             else if (type === 'order-created') {
                 const order = payload;
-                console.log(`📦 [DB] Processing Order #${order.order_number}`);
+                console.log(`[DB] Processing Order #${order.order_number}`);
 
 
                 if (order.checkout_id) {
@@ -80,9 +80,9 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
                             where: { id: BigInt(order.checkout_id), tenantId },
                             data: { completed: true, updatedAt: new Date() }
                         });
-                        console.log(`✅ [DB] Linked Checkout ${order.checkout_id} marked as completed.`);
+                        console.log(`[DB] Linked Checkout ${order.checkout_id} marked as completed.`);
                     } catch (err) {
-                        console.warn(`⚠️ Could not link checkout ${order.checkout_id}`);
+                        console.warn(`Could not link checkout ${order.checkout_id}`);
                     }
                 }
 
@@ -175,14 +175,14 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
                             ordersCount: aggregate._count.id || 0
                         }
                     });
-                    console.log(`💰 [DB] Recalculated Customer ${customerId}: Total Spent = ${aggregate._sum.totalPrice}`);
+                    console.log(`[DB] Recalculated Customer ${customerId}: Total Spent = ${aggregate._sum.totalPrice}`);
                 }
 
-                console.log(`✅ [DB] Order #${order.order_number} saved fully!`);
+                console.log(`[DB] Order #${order.order_number} saved fully!`);
             }
         }
     } catch (error: any) {
-        console.error(`❌ [Worker] Job ${job.id} failed:`, error.message);
+        console.error(`[Worker] Job ${job.id} failed:`, error.message);
         throw error;
     }
 }, {
@@ -191,9 +191,9 @@ const worker = new Worker('ingestion-queue', async (job: Job) => {
 });
 
 worker.on('completed', (job) => {
-    console.log(`🎉 [Worker] Job ${job.id} finished successfully`);
+    console.log(`[Worker] Job ${job.id} finished successfully`);
 });
 
 worker.on('failed', (job, err) => {
-    console.log(`💀 [Worker] Job ${job?.id} failed with ${err.message}`);
+    console.log(`[Worker] Job ${job?.id} failed with ${err.message}`);
 });

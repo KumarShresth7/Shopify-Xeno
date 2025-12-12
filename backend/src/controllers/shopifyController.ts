@@ -100,7 +100,7 @@ export const getCustomers = async (req: TenantRequest, res: Response) => {
             },
         });
     } catch (error: any) {
-        console.error('❌ Error fetching customers:', error);
+        console.error('Error fetching customers:', error);
 
         res.status(500).json({
             success: false,

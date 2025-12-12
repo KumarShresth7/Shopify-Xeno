@@ -6,7 +6,7 @@ import apiClient from '@/lib/api';
 import { Package, Search, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 
 const fetchProducts = async () => {
-  const res = await apiClient.get('/tenant/products'); // Ensure this endpoint returns the new 'inventory' field
+  const res = await apiClient.get('/tenant/products');
   return res.data.data;
 };
 
@@ -83,7 +83,7 @@ export default function ProductsPage() {
                     {product.inventory}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-foreground">
-                    ${Number(product.price).toFixed(2)}
+                    ₹{Number(product.price).toFixed(2)}
                   </td>
                 </tr>
               ))}
